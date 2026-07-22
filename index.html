@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SOSRIM - V6 FINAL REVISADA</title>
+    <style>
+        :root { --primary: #d32f2f; --secondary: #1976d2; --bg: #f0f2f5; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); padding-bottom: 80px; overflow-x: hidden; }
+        /* Radio Station Buttons Styling */
+        .radio-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        .radio-btn { 
+            padding: 20px 10px; 
+            border-radius: 12px; 
+            border: none; 
+            color: white; 
+            font-weight: bold; 
+            font-size: 16px; 
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            transition: transform 0.1s;
+        }
+        .radio-btn:active { transform: scale(0.95); }
+        .radio-btn.playing { outline: 3px solid #000; outline-offset: -3px; }
+        .card { background: white; margin: 10px; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .btn { padding: 12px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; color: white; background: var(--primary); }
+        .btn-del { background: #ff5252; color: white; border: none; padding: 8px 12px; border-radius: 4px; font-weight: bold; font-size: 14px; }
+        
+        #login-screen { position: fixed; inset: 0; background: white; z-index: 200; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .btn-login { width: 80%; padding: 15px; margin: 10px; border: none; border-radius: 8px; background: var(--primary); color: white; font-size: 18px; font-weight: bold; }
+        
+        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 10px; }
+        .m-card { background: white; padding: 10px; border-radius: 8px; text-align: center; border-bottom: 5px solid #ccc; cursor: pointer; position: relative; }
+        .m-card.verde { border-color: #4caf50; }
+        .m-card.amarelo { border-color: #ffeb3b; }
+        .m-card.azul { border-color: #2196f3; }
+        .m-card.roxo { border-color: #9b59b6; }
+        .m-card.vermelho { border-color: #f44336; }
+        
+        .status-badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; color: white; font-weight: bold; }
+        .status-badge.verde { background: #4caf50; }
+        .status-badge.amarelo { background: #fbc02d; color: black; }
+        .status-badge.azul { background: #2196f3; }
+        .status-badge.roxo { background: #9b59b6; }
+        .status-badge.vermelho { background: #f44336; }
+        .m-card.vermelho-pisca { border-color: #f44336; animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(244,67,54,0.7); } 70% { box-shadow: 0 0 0 10px rgba(244,67,54,0); } 100% { box-shadow: 0 0 0 0 rgba(244,67,54,0); } }
+        .m-num { font-size: 22px; font-weight: bold; }
+        .m-hosp { font-size: 9px; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .m-time { font-size: 10px; margin-top: 2px; line-height: 1.1; }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; border-top: 1px solid #ddd; height: 60px; z-index: 100; }
+        .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; color: #666; border: none; background: none; }
+        .nav-btn.active { color: var(--primary); font-weight: bold; }
+
+        #edit-modal, #gps-alert { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 150; display: none; align-items: center; justify-content: center; padding: 20px; }
+        .modal-content { background: white; width: 100%; border-radius: 12px; padding: 20px; }
+        input, select, textarea { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
+        .list-item { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding: 12px 0; }
+    </style>
+</head>
+<body>
+    <div id="login-screen">
+        <h2 style="color:var(--primary)">SOSRIM - ACESSO</h2>
+        <button class="btn-login" onclick="login('Sergio')">SERGIO</button>
+        <button class="btn-login" onclick="login('Aderildo')">ADERILDO</button>
+        <button class="btn-login" onclick="login('Jairo')">JAIRO</button>
+    </div>
+
+    <div class="header" id="header-user">SOSRIM</div>
+
+    <!-- MONITOR -->
+    <div id="tab1" class="tab-content active">
+        <div class="grid" id="monitor-grid"></div>
+        <div class="card" style="margin-top: 15px; background: #fff; border: 1px solid #ddd; padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <p style="font-size: 14px; font-weight: bold; color: #333; margin-bottom: 5px; text-align: center;">
+                📻 RÁDIOS CURITIBA 🎶
+            </p>
+            <p style="font-size: 11px; color: #666; text-align: center; margin-bottom: 15px;">
+                (Toque para abrir a rádio em uma nova aba)
+            </p>
+            
+            <div class="radio-grid">
+                <button class="radio-btn" style="background:#e67e22;" onclick="const win = window.open('https://www.98fmcuritiba.com.br/', '_blank'); if(!win) window.location.href='https://www.98fmcuritiba.com.br/';"><span>98FM</span><small style="font-size:10px; opacity:0.8;">Rock/Pop</small></button>
+                <button class="radio-btn" style="background:#2ecc71;" onclick="const win = window.open('https://ouroverdefm.com.br/', '_blank'); if(!win) window.location.href='https://ouroverdefm.com.br/';"><span>OURO VERDE</span><small style="font-size:10px; opacity:0.8;">Suave</small></button>
+                <button class="radio-btn" style="background:#3498db;" onclick="const win = window.open('https://mundolivrefm.com.br/', '_blank'); if(!win) window.location.href='https://mundolivrefm.com.br/';"><span>MUNDO LIVRE</span><small style="font-size:10px; opacity:0.8;">Alternativa</small></button>
+                <button class="radio-btn" style="background:#9b59b6;" onclick="const win = window.open('https://www.radiotransamerica.com.br/', '_blank'); if(!win) window.location.href='https://www.radiotransamerica.com.br/';"><span>TRANSAMÉRICA</span><small style="font-size:10px; opacity:0.8;">Pop</small></button>
+                <button class="radio-btn" style="background:#e74c3c;" onclick="const win = window.open('https://www.kissfm.com.br/', '_blank'); if(!win) window.location.href='https://www.kissfm.com.br/';"><span>KISS FM</span><small style="font-size:10px; opacity:0.8;">Rock</small></button>
+                <button class="radio-btn" style="background:#f1c40f; color:#000;" onclick="const win = window.open('https://www.antena1.com.br/', '_blank'); if(!win) window.location.href='https://www.antena1.com.br/';"><span>ANTENA 1</span><small style="font-size:10px; opacity:0.8;">Sucessos</small></button>
+                <button class="radio-btn" style="background:#34495e;" onclick="const win = window.open('https://www.bandnewsfmcuritiba.com/player/', '_blank'); if(!win) window.location.href='https://www.bandnewsfmcuritiba.com/player/';"><span>BAND NEWS</span><small style="font-size:10px; opacity:0.8;">Notícias</small></button>
+                <button class="radio-btn" style="background:#16a085;" onclick="const win = window.open('https://cbncuritiba.com.br/', '_blank'); if(!win) window.location.href='https://cbncuritiba.com.br/';"><span>CBN CWB</span><small style="font-size:10px; opacity:0.8;">Notícias</small></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- GPS/ROTA -->
+    <div id="tab2" class="tab-content">
+        <div class="card">
+            <h3>📦 Entrega de Materiais / Máquina Contínua</h3>
+            <p style="font-size:12px; color:#666; margin-bottom:10px;">Registre aqui entregas de insumos ou máquinas de diálise contínua.</p>
+            
+            <label style="font-size:12px; font-weight:bold;">Hospital:</label>
+            <select id="mat-hosp" style="width:100%; height:40px; margin-bottom:15px; border-radius:5px; border:1px solid #ccc;">
+                <!-- Preenchido via JS -->
+            </select>
+
+            <label style="font-size:12px; font-weight:bold;">Descrição da Entrega:</label>
+            <input type="text" id="mat-desc" placeholder="Ex: 5 kits, Máquina Contínua, etc." style="width:100%; height:40px; margin-bottom:15px; border-radius:5px; border:1px solid #ccc; padding-left:10px; box-sizing: border-box;">
+
+            <button class="btn" style="width:100%; background:#27ae60; height:45px;" onclick="registerMaterial()">REGISTRAR ENTREGA</button>
+        </div>
+
+        <div class="card">
+            <h3>📍 Rota Individual (20 min)</h3>
+            <p style="font-size:12px; color:#666;">Direto para a próxima máquina liberada:</p>
+            <div style="display:flex; gap:10px;">
+                <button class="btn" style="flex:1; background:#33ccff;" onclick="openWaze()">Waze</button>
+                <button class="btn" style="flex:1; background:#4caf50;" onclick="openIndividualMaps()">Google Maps</button>
+            </div>
+        </div>
+        <div class="card">
+            <h3>🗺️ Pacote de Rotas (20 min)</h3>
+            <p style="font-size:12px; color:#666;">Vários hospitais + Retorno à Base:</p>
+            <div id="route-list" style="font-size:12px; margin:10px 0; color:#d32f2f; font-weight:bold;"></div>
+            <button class="btn" style="width:100%; background:#4caf50;" onclick="openGoogleMaps()">Gerar Pacote Otimizado</button>
+        </div>
+        <div class="card">
+            <h3>📊 Resumo</h3>
+            <div id="fleet-stats"></div>
+        </div>
+    </div>
+
+    <!-- HOSPITAIS -->
+    <div id="tab3" class="tab-content">
+        <div class="card">
+            <h3>Cadastrar Hospital</h3>
+            <div style="display:flex; gap:5px;">
+                <input type="text" id="new-hosp-name" placeholder="Nome do Hospital">
+                <button class="btn" onclick="addHospital()">ADD</button>
+            </div>
+        </div>
+        <div class="card">
+            <h3>Gerenciar Hospitais</h3>
+            <div id="hospital-list-container"></div>
+        </div>
+    </div>
+
+    <!-- HISTÓRICO -->
+    <div id="tab4" class="tab-content">
+        <div class="card">
+            <h3>Histórico do Dia</h3>
+            <div id="history-list" style="max-height: 400px; overflow-y: auto;"></div>
+        </div>
+    </div>
+
+    <!-- RELATÓRIO -->
+    <div id="tab5" class="tab-content">
+        <div class="card" id="closing-form">
+            <h3>Relatório de Fim de Dia</h3>
+            <textarea id="closing-obs" placeholder="Observações..." rows="4"></textarea>
+            <button class="btn" style="width:100%; margin-top:10px;" onclick="generateReport()">GERAR RELATÓRIO</button>
+        </div>
+        <div class="card" id="report-view" style="display:none;">
+            <h3>Relatório Gerado</h3>
+            <div id="report-output" style="background:#f4f4f4; padding:10px; font-family:monospace; font-size:12px; white-space:pre-wrap;"></div>
+            <button class="btn" style="width:100%; margin-top:10px; background:#4caf50;" onclick="copyReport()">COPIAR WHATSAPP</button>
+            <button class="btn" style="width:100%; margin-top:10px; background:#666;" onclick="document.getElementById('report-view').style.display='none'; document.getElementById('closing-form').style.display='block';">VOLTAR</button>
+        </div>
+    </div>
+
+    <div class="nav">
+        <button class="nav-btn active" onclick="showTab(1, this)">Monitor</button>
+        <button class="nav-btn" onclick="showTab(2, this)">GPS/Rota</button>
+        <button class="nav-btn" onclick="showTab(3, this)">Hospitais</button>
+        <button class="nav-btn" onclick="showTab(4, this)">Logs</button>
+        <button class="nav-btn" onclick="showTab(5, this)">Fim Dia</button>
+    </div>
+
+    <div id="edit-modal">
+        <div class="modal-content">
+            <h3 id="modal-title">Máquina</h3>
+            <label>Liberação (Técnico):</label>
+            <input type="time" id="modal-lib-time">
+            <label>Entrega (Motorista):</label>
+            <input type="time" id="modal-ent-time">
+            <label>Hospital:</label>
+            <select id="modal-hosp"></select>
+            <label>Status:</label>
+            <select id="modal-status">
+                <option value="verde">BASE (Verde)</option>
+                <option value="roxo">ENTREGA (Roxo)</option>
+                <option value="azul">RETORNO (Azul)</option>
+                <option value="amarelo">HOSPITAL (Amarelo)</option>
+                <option value="vermelho">COLETA (Vermelho)</option>
+            </select>
+            <div style="display:flex; gap:10px; margin-top:15px;">
+                <button class="btn" onclick="saveModal()" style="flex:2;">SALVAR</button>
+                <button class="btn" onclick="closeModal()" style="flex:1; background:#666;">X</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="gps-alert">
+        <div class="modal-content" style="text-align:center;">
+            <h3 id="gps-alert-title" style="color:var(--primary)">⚠️ CHEGADA LOCAL</h3>
+            <select id="gps-op-type">
+                <option value="Saindo da Base">Saindo da Base (Roxo)</option>
+                <option value="Recolhido">Recolhido do Hospital (Azul)</option>
+                <option value="Entregou Máquina">Entregou Máquina (Amarelo)</option>
+                <option value="Entregou na Base">Entregou na Base (Verde)</option>
+                <option value="Outro Material">Outro Material</option>
+            </select>
+            <input type="number" id="gps-qty" placeholder="Quantidade / IDs">
+            <div style="display:flex; gap:10px; margin-top:15px;">
+                <button class="btn" style="flex:2;" onclick="processGpsAction()">REGISTRAR</button>
+                <button class="btn" style="flex:1; background:#666;" onclick="document.getElementById('gps-alert').style.display='none'">FECHAR</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+
+    <script>
+        const firebaseConfig = {
+          apiKey: "AIzaSyA896LR0DJv-TKqwt_DpkgO1MeaRKdKwP4",
+          authDomain: "sosrim-592ab.firebaseapp.com",
+          databaseURL: "https://sosrim-592ab-default-rtdb.firebaseio.com",
+          projectId: "sosrim-592ab",
+          storageBucket: "sosrim-592ab.firebasestorage.app",
+          messagingSenderId: "483781840617",
+          appId: "1:483781840617:web:02a3d62b3e79f5b001ea78",
+          measurementId: "G-HW70F0DEEH"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        const DEFAULT_HOSPITALS = ["Erasto Gaertner", "Erastinho", "Marcelino Champagnat", "Nações", "Oswaldo Cruz", "Fraturas XV", "Pilar", "Graças", "Nossa Saúde", "Inc Campo Comprido", "Maternidade Trabalhador", "Marillac", "Yoshimi"];
+        
+        // Tenta carregar v6 (original) primeiro para não perder dados, senão tenta a nova final
+        let state = JSON.parse(localStorage.getItem('sosrim_v6')) || JSON.parse(localStorage.getItem('sosrim_v6_final')) || {
+            user: null,
+            machines: Array.from({length: 18}, (_, i) => ({ id: i + 1, status: 'verde', hospital: 'BASE', liberacao: '', entrega: '' })),
+            hospitals: DEFAULT_HOSPITALS,
+            history: []
+        };
+
+        let currentEditingId = null;
+
+        function startSync() {
+            db.ref('sosrim_state').on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    state = data;
+                    render();
+                } else {
+                    save();
+                }
+            });
+        }
+
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            const btn = document.getElementById('pwa-install-btn');
+            if(btn) btn.style.display = 'block';
+        });
+
+        function installPWA() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        document.getElementById('install-hint').style.display = 'none';
+                    }
+                    deferredPrompt = null;
+                });
+            } else {
+                alert('No Android: Clique nos 3 pontinhos e "Instalar Aplicativo".\nNo iPhone: Clique no ícone de compartilhar e "Adicionar à Tela de Início".');
+            }
+        }
+
+        function login(user) {
+            state.user = user;
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('header-user').innerText = `SOSRIM - ${user}`;
+            
+            // Botão discreto para instalação
+            if (window.matchMedia('(display-mode: browser)').matches) {
+                const installHint = document.createElement('div');
+                installHint.id = 'install-hint';
+                installHint.style = 'background:#f0f0f0; color:#333; padding:10px; margin:10px; border-radius:8px; border:1px solid #ccc; font-size:12px; display:flex; justify-content:space-between; align-items:center;';
+                installHint.innerHTML = `
+                    <span>🚑 Instalar ícone SOS RIM?</span>
+                    <button id="pwa-install-btn" onclick="installPWA()" 
+                            style="background:var(--primary); color:white; border:none; padding:5px 10px; border-radius:4px; font-size:11px; cursor:pointer;">
+                        INSTALAR
+                    </button>
+                `;
+                document.getElementById('tab1').prepend(installHint);
+            }
+
+            startSync(); 
+            setTimeout(() => { if(state.user) document.getElementById('gps-alert').style.display = 'block'; }, 180000);
+        }
+
+        function showTab(n, btn) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('tab' + n).classList.add('active');
+            btn.classList.add('active');
+            
+            if(n === 2) {
+                const matHosp = document.getElementById('mat-hosp');
+                if(matHosp) {
+                    matHosp.innerHTML = state.hospitals.map(h => `<option value="${h}">${h}</option>`).join('');
+                }
+            }
+
+            render();
+        }
+
+        function registerMaterial() {
+            const hosp = document.getElementById('mat-hosp').value;
+            const desc = document.getElementById('mat-desc').value;
+            if(!desc) return alert("Por favor, descreva o que foi entregue.");
+            
+            const time = new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+            log(`ENTREGA MATERIAL: ${hosp} - ${desc} às ${time}`);
+            
+            alert(`Entrega registrada: ${hosp} - ${desc} (${time})`);
+            document.getElementById('mat-desc').value = '';
+            save();
+            render();
+        }
+
+        function openEdit(id) {
+            currentEditingId = id;
+            const m = state.machines.find(x => x.id === id);
+            document.getElementById('modal-title').innerText = `Máquina ${id}`;
+            document.getElementById('modal-status').value = m.status;
+            document.getElementById('modal-lib-time').value = m.liberacao || "";
+            document.getElementById('modal-ent-time').value = m.entrega || "";
+            const hSel = document.getElementById('modal-hosp');
+            hSel.innerHTML = '<option value="BASE">🏠 BASE</option>' + state.hospitals.map(h => `<option value="${h}" ${m.hospital==h?'selected':''}>${h}</option>`).join('');
+            document.getElementById('edit-modal').style.display = 'flex';
+        }
+
+        function saveModal() {
+            const m = state.machines.find(x => x.id === currentEditingId);
+            const lib = document.getElementById('modal-lib-time').value;
+            const ent = document.getElementById('modal-ent-time').value;
+            const st = document.getElementById('modal-status').value;
+            const h = document.getElementById('modal-hosp').value;
+            
+            if(lib && lib !== m.liberacao) { m.status = 'vermelho'; log(`M${m.id} LIBERADA às ${lib}`); }
+            else if(ent && ent !== m.entrega) { log(`M${m.id} ENTREGUE às ${ent}`); m.status = st; }
+            else { m.status = st; }
+            
+            m.liberacao = lib; m.entrega = ent; m.hospital = h;
+            closeModal(); save(); render();
+        }
+
+        function closeModal() { document.getElementById('edit-modal').style.display = 'none'; }
+        function addHospital() { const name = document.getElementById('new-hosp-name').value; if(name) { state.hospitals.push(name); state.hospitals.sort(); document.getElementById('new-hosp-name').value=''; log(`+Hosp: ${name}`); save(); render(); } }
+        
+        // FUNÇÃO DE EXCLUSÃO CORRIGIDA
+        function removeHospital(name) { 
+            if(confirm('Excluir ' + name + '?')) { 
+                state.hospitals = state.hospitals.filter(h => h !== name); 
+                log(`-Hosp: ${name}`); 
+                save(); 
+                render(); 
+            } 
+        }
+
+        function saveLocation(hosp) {
+            if(!navigator.geolocation) return alert("GPS não suportado.");
+            navigator.geolocation.getCurrentPosition(pos => {
+                if(!state.coords) state.coords = {};
+                state.coords[hosp] = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+                // Salvar ponto da BASE para alerta automático
+                if(hosp === 'BASE') {
+                    state.baseCoords = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+                }
+                alert(`📍 Localização de ${hosp} salva com sucesso!`);
+                save();
+            }, err => alert("Erro ao obter GPS. Verifique as permissões de localização no seu navegador."));
+        }
+
+        function processGpsAction() {
+            const type = document.getElementById('gps-op-type').value;
+            const qtyStr = document.getElementById('gps-qty').value;
+            const isBase = document.getElementById('gps-alert-title').innerText.includes("BASE");
+
+            log(`${isBase ? 'BASE' : 'HOSP'}: ${type} (${qtyStr})`);
+
+            // Se for número pequeno (ex: 1, 2, 3), tratamos como QUANTIDADE aleatória.
+            // Se for número grande ou vários números, tratamos como IDs específicos.
+            const inputParts = qtyStr.split(/[,\s]+/).map(Number).filter(n => !isNaN(n) && n > 0);
+            let ids = [];
+            let quantity = 0;
+
+            if (inputParts.length === 1 && inputParts[0] < 20) {
+                quantity = inputParts[0];
+            } else {
+                ids = inputParts;
+            }
+
+            // Regra de Conferência Automática
+            if (isBase) {
+                if (type === "Saindo da Base") {
+                    // SAINDO DA BASE (Verde -> Roxo)
+                    let targets = [];
+                    if (ids.length > 0) {
+                        targets = state.machines.filter(m => ids.includes(m.id));
+                    } else if (quantity > 0) {
+                        targets = state.machines.filter(m => m.status === 'verde').slice(0, quantity);
+                    }
+                    targets.forEach(m => {
+                        m.status = 'roxo';
+                        m.hospital = 'TRÂNSITO';
+                    });
+                } else {
+                    // CHEGOU NA BASE (Qualquer outra opção: Azul/Roxo -> Verde)
+                    const máquinasParaBaixar = state.machines.filter(m => m.status === 'azul' || m.status === 'roxo');
+                    if (máquinasParaBaixar.length > 0 && confirm(`Deseja dar baixa em ${máquinasParaBaixar.length} máquinas que voltaram para o estoque (VERDE)?`)) {
+                        const now = new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+                        máquinasParaBaixar.forEach(m => {
+                            m.status = 'verde';
+                            m.hospital = 'BASE';
+                            m.liberacao = '';
+                            m.retornoBase = now; // Registra o horário de retorno à base
+                        });
+                    }
+                }
+            } else {
+                // NO HOSPITAL
+                const hospName = document.getElementById('gps-alert-title').innerText.replace("⚠️ CHEGADA EM ", "").replace("⚠️ CHEGADA NO ", "");
+                
+                if (type === "Entregou Máquina") {
+                    // ENTREGOU (Roxo -> Amarelo)
+                    let targets = [];
+                    if (ids.length > 0) {
+                        targets = state.machines.filter(m => ids.includes(m.id));
+                    } else if (quantity > 0) {
+                        targets = state.machines.filter(m => m.status === 'roxo').slice(0, quantity);
+                    }
+                    targets.forEach(m => {
+                        m.status = 'amarelo';
+                        m.hospital = hospName;
+                        m.entrega = new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+                    });
+                } else if (type === "Recolhido") {
+                    // RECOLHEU (Amarelo -> Azul)
+                    let targets = [];
+                    if (ids.length > 0) {
+                        targets = state.machines.filter(m => ids.includes(m.id));
+                    } else if (quantity > 0) {
+                        targets = state.machines.filter(m => m.status === 'amarelo' && m.hospital === hospName).slice(0, quantity);
+                        // Se não achou no hospital específico, pega qualquer amarela
+                        if (targets.length < quantity) {
+                            const extras = state.machines.filter(m => m.status === 'amarelo' && !targets.includes(m)).slice(0, quantity - targets.length);
+                            targets = targets.concat(extras);
+                        }
+                    }
+                    targets.forEach(m => {
+                        m.status = 'azul';
+                        m.hospital = 'RETORNO';
+                    });
+                }
+            }
+            
+            document.getElementById('gps-alert').style.display = 'none';
+            document.getElementById('gps-qty').value = '';
+            save(); render();
+        }
+
+        // Coordenadas fixas da Base: Rua Buenos Aires, 792
+        const BASE_COORDS = { lat: -25.4468, lon: -49.2785 };
+
+        function checkBaseArrival() {
+            if(!navigator.geolocation || !state.user) return;
+            navigator.geolocation.getCurrentPosition(pos => {
+                const dist = getDistance(pos.coords.latitude, pos.coords.longitude, BASE_COORDS.lat, BASE_COORDS.lon);
+                
+                const IN_BASE = dist < 0.2; // 200 metros
+                
+                // Só dispara se mudar o estado (entrou ou saiu)
+                if (IN_BASE && !state.insideBase) {
+                    state.insideBase = true; // Trava para não perguntar de novo enquanto estiver dentro
+                    document.getElementById('gps-alert-title').innerText = "🏠 CHEGADA NA BASE";
+                    document.getElementById('gps-alert').style.display = 'block';
+                    save(); // Salva o estado de que está "dentro"
+                } else if (!IN_BASE && state.insideBase) {
+                    state.insideBase = false; // Destrava quando sair do raio da base
+                    save();
+                }
+            }, null, {enableHighAccuracy: true});
+        }
+
+        function getDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const dLat = (lat2-lat1) * Math.PI / 180;
+            const dLon = (lon2-lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        }
+
+        setInterval(checkBaseArrival, 45000); 
+
+        // Radio logic removed in favor of external links
+        function log(msg) { state.history.push({ time: new Date().toLocaleTimeString().slice(0,5), log: msg }); }
+        
+        // Salva em ambos os slots para garantir compatibilidade
+        function save() { 
+            if (db && state.user) {
+                db.ref('sosrim_state').set(state);
+            }
+            const data = JSON.stringify(state);
+            localStorage.setItem('sosrim_v6', data);
+            localStorage.setItem('sosrim_v6_final', data);
+        }
+
+        function render() {
+            // Monitor
+            document.getElementById('monitor-grid').innerHTML = state.machines.map(m => {
+                let statusClass = m.status;
+                if (m.status === 'vermelho' && m.liberacao) {
+                    const [h, min] = m.liberacao.split(':').map(Number);
+                    const libDate = new Date(); libDate.setHours(h, min, 0);
+                    if (new Date() > libDate) statusClass = 'vermelho-pisca';
+                }
+
+                // Texto amigável do status
+                let statusTxt = m.status.toUpperCase();
+                if(m.status === 'verde') statusTxt = 'BASE';
+                if(m.status === 'azul') statusTxt = 'RETORNO';
+                if(m.status === 'roxo') statusTxt = 'EM TRÂNSITO';
+                if(m.status === 'amarelo') statusTxt = 'ENTREGUE';
+                if(m.status === 'vermelho') statusTxt = 'LIBERADA';
+
+                return `
+                <div class="m-card ${statusClass}" onclick="openEdit(${m.id})">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                        <span class="status-badge ${m.status}">${statusTxt}</span>
+                        <span style="font-size: 10px; color: #999;">#${m.id < 10 ? '0'+m.id : m.id}</span>
+                    </div>
+                    <div class="m-num" style="font-size:1.2em">${m.id}</div>
+                    <div class="m-hosp">${m.hospital}</div>
+                    <div class="m-time">
+                        ${m.liberacao ? '<span style="color:#d32f2f">L:'+m.liberacao+'</span>' : ''}
+                        ${m.entrega ? '<br><span style="color:#4caf50">E:'+m.entrega+'</span>' : ''}
+                    </div>
+                </div>`;
+            }).join('');
+
+            // Rota Otimizada (Rigorosa)
+            const now = new Date();
+            const readyOnes = state.machines.filter(m => {
+                if(m.status === 'vermelho') {
+                    if(m.liberacao) {
+                        const [h, min] = m.liberacao.split(':').map(Number);
+                        const libDate = new Date(); libDate.setHours(h, min, 0);
+                        const diff = (libDate - now) / 60000;
+                        return diff <= 20; // Só mostra se faltar 20 min ou já passou
+                    }
+                    return true;
+                }
+                return false;
+            });
+
+            document.getElementById('route-list').innerHTML = readyOnes.length ? readyOnes.map(m => `
+                <div class="list-item" onclick="openTargetGPS('${m.hospital}')" style="cursor:pointer; border-left:4px solid var(--primary); margin-bottom:5px; padding:10px;">
+                    <div style="display:flex; justify-content:space-between; width:100%;">
+                        <span><strong>M${m.id}</strong> - ${m.hospital}</span>
+                        <span style="font-size:10px; background:#eee; padding:2px 5px; border-radius:3px;">IR AGORA</span>
+                    </div>
+                </div>`).join('') : 'Nenhuma máquina pendente.';
+
+            // Stats
+            document.getElementById('fleet-stats').innerHTML = `
+                <div style="display:flex; justify-content:space-around; text-align:center;">
+                    <div><b>${state.machines.filter(x=>x.status=='verde').length}</b><br><small>BASE</small></div>
+                    <div><b>${state.machines.filter(x=>x.status=='amarelo').length}</b><br><small>HOSPITAL</small></div>
+                    <div><b>${state.machines.filter(x=>x.status=='vermelho').length}</b><br><small>COLETA</small></div>
+                    <div><b>${state.machines.filter(x=>x.status=='roxo').length}</b><br><small>TRÂNSITO</small></div>
+                    <div><b>${state.machines.filter(x=>x.status=='azul').length}</b><br><small>RETORNO</small></div>
+                    <div><b>${state.machines.filter(x=>x.status=='amarelo').length}</b><br><small>ENTREGUE</small></div>
+                    <div><b>${state.machines.filter(x=>x.status=='vermelho').length}</b><br><small>LIBERADA</small></div>
+                </div>`;
+
+            // Hospitais com Botão EXCLUIR e PIN
+            document.getElementById('hospital-list-container').innerHTML = state.hospitals.map(h => `
+                <div class="list-item" style="display:flex; align-items:center; gap:5px;">
+                    <span style="font-weight:bold; flex:1;">${h}</span>
+                    <button onclick="saveLocation('${h}')" style="background:#4caf50; color:white; border:none; padding:8px 12px; border-radius:4px; font-size:12px; font-weight:bold;">📌 PIN</button>
+                    <button class="btn-del" onclick="removeHospital('${h}')" style="padding:8px 12px;">EXCLUIR</button>
+                </div>
+            `).join('');
+
+            // Logs
+            document.getElementById('history-list').innerHTML = state.history.slice(-20).reverse().map(i => `
+                <div style="font-size:11px; padding:5px; border-bottom:1px solid #eee;">[${i.time}] ${i.log}</div>
+            `).join('');
+        }
+
+        function openTargetGPS(hosp) {
+            let dest = hosp + " Curitiba";
+            if(state.coords && state.coords[hosp]) {
+                dest = `${state.coords[hosp].lat},${state.coords[hosp].lon}`;
+            }
+            if(confirm(`Abrir GPS para ${hosp}?\n\nOK para Google Maps\nCancelar para Waze`)) {
+                window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(dest)}&travelmode=driving`, '_blank');
+            } else {
+                window.open(`https://waze.com/ul?ll=${encodeURIComponent(dest)}&navigate=yes`, '_blank');
+            }
+        }
+
+        function openGoogleMaps() {
+            const now = new Date();
+            const readyOnes = state.machines.filter(m => {
+                if(m.status === 'vermelho' && m.liberacao) {
+                    const [h, min] = m.liberacao.split(':').map(Number);
+                    const libDate = new Date(); libDate.setHours(h, min, 0);
+                    return ((libDate - now) / 60000) <= 20;
+                }
+                return m.status === 'vermelho';
+            });
+            if(!readyOnes.length) return alert("Nada para recolher nos próximos 20 min.");
+            
+            const dests = [...new Set(readyOnes.map(m => m.hospital))];
+            const base = "Rua Buenos Aires, 792 Curitiba";
+            
+            // Se estiver na BASE (hospital da primeira máquina é BASE ou localização lógica), 
+            // a rota deve ser apenas Hospitais. Se estiver na RUA, Hospitais -> BASE.
+            // Para garantir a melhor otimização do Google:
+            const waypoints = dests.map(d => encodeURIComponent(d + " Curitiba")).join('/');
+            
+            // URL que permite ao usuário clicar em "Otimizar Ordem" no Google Maps se necessário,
+            // mas já enviando uma sequência lógica de pontos.
+            const url = `https://www.google.com/maps/dir/Current+Location/${waypoints}/${encodeURIComponent(base)}`;
+            
+            window.open(url, '_blank');
+        }
+
+        function openWaze() {
+            const now = new Date();
+            const readyOnes = state.machines.filter(m => {
+                if(m.status === 'vermelho' && m.liberacao) {
+                    const [h, min] = m.liberacao.split(':').map(Number);
+                    const libDate = new Date(); libDate.setHours(h, min, 0);
+                    return ((libDate - now) / 60000) <= 20;
+                }
+                return m.status === 'vermelho';
+            });
+            
+            if(!readyOnes.length) return alert("Nenhuma máquina para o Waze.");
+            
+            const dests = [...new Set(readyOnes.map(m => m.hospital))];
+            
+            // O Waze não aceita múltiplos destinos via link externo (URL Scheme).
+            // A melhor alternativa para o motorista "montar o pacote" no Waze é 
+            // enviar os destinos para o histórico/busca do Waze ou abrir o primeiro.
+            // Para não frustrar o usuário, vamos abrir o primeiro e avisar.
+            const proximo = dests[0];
+            alert("O Waze permite apenas um destino por vez. Abrindo o primeiro hospital do pacote. Após chegar, use a lista do app para clicar no próximo!");
+            window.open(`https://waze.com/ul?q=${encodeURIComponent(proximo + " Curitiba")}&navigate=yes`, '_blank');
+        }
+
+        function openIndividualMaps() {
+            const now = new Date();
+            const readyOnes = state.machines.filter(m => {
+                if(m.status === 'vermelho' && m.liberacao) {
+                    const [h, min] = m.liberacao.split(':').map(Number);
+                    const libDate = new Date(); libDate.setHours(h, min, 0);
+                    return ((libDate - now) / 60000) <= 20;
+                }
+                return m.status === 'vermelho';
+            });
+            if(!readyOnes.length) return alert("Nada para recolher nos próximos 20 min.");
+            window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(readyOnes[0].hospital + " Curitiba")}&travelmode=driving`, '_blank');
+        }
+
+        function openWaze() {
+            const now = new Date();
+            const readyOnes = state.machines.filter(m => {
+                if(m.status === 'vermelho' && m.liberacao) {
+                    const [h, min] = m.liberacao.split(':').map(Number);
+                    const libDate = new Date(); libDate.setHours(h, min, 0);
+                    return ((libDate - now) / 60000) <= 20;
+                }
+                return m.status === 'vermelho';
+            });
+            
+            if(!readyOnes.length) return alert("Nenhuma máquina pronta para rota individual nos próximos 20 min.");
+            
+            // No Waze, como é individual/sequencial, enviamos para o primeiro destino da lista de prioridade
+            // Mas seguindo o pedido de "rota otimizada tanto para Waze quanto Maps":
+            // O Waze não suporta rotas com múltiplos destinos via URL de forma nativa como o Maps,
+            // então abrimos o hospital mais urgente/próximo.
+            window.open(`https://waze.com/ul?q=${encodeURIComponent(readyOnes[0].hospital + " Curitiba")}&navigate=yes`, '_blank');
+        }
+
+        function closeGpsAlert() { log(`LOCAL: ${document.getElementById('gps-op-type').value} (${document.getElementById('gps-qty').value})`); document.getElementById('gps-alert').style.display='none'; }
+
+        function generateReport() {
+            let r = `📋 RELATÓRIO SOSRIM - ${new Date().toLocaleDateString('pt-BR')}\n👤 Motorista: ${state.user}\n\n`;
+            state.machines.forEach(m => { 
+                // Se a máquina saiu da base ou tem algum registro, ela entra no relatório
+                if(m.hospital !== 'BASE' || m.liberacao || m.entrega || m.retornoBase) {
+                    r += `M${m.id}: `;
+                    
+                    // Mostra o histórico na ordem lógica
+                    let infos = [];
+                    if(m.hospital && m.hospital !== 'BASE' && m.hospital !== 'RETORNO' && m.hospital !== 'TRÂNSITO') {
+                        infos.push(`Local: ${m.hospital}`);
+                    }
+                    if(m.liberacao) infos.push(`Lib. Técnico: ${m.liberacao}`);
+                    if(m.entrega)   infos.push(`Entr. Hospital: ${m.entrega}`);
+                    if(m.retornoBase) infos.push(`Retorno Base: ${m.retornoBase}`);
+                    
+                    r += infos.join(' | ') || 'Sem movimentação';
+                    r += `\n`;
+                } 
+            });
+            r += `\nOBS: ${document.getElementById('closing-obs').value || 'Sem obs.'}\n\nGerado via SOSRIM App`;
+            document.getElementById('report-output').innerText = r;
+            document.getElementById('closing-form').style.display='none'; document.getElementById('report-view').style.display='block';
+        }
+        function copyReport() { navigator.clipboard.writeText(document.getElementById('report-output').innerText).then(()=>alert("Copiado!")); }
+
+        if(state.user) login(state.user);
+    </script>
+</body>
+</html>
