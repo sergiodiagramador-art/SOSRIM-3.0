@@ -4,26 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SOSRIM</title>
-    <!-- BIBLIOTECAS DE ALTA COMPATIBILIDADE -->
+    <!-- BIBLIOTECAS DE ALTA COMPATIBILIDADE (CÓDIGO CLÁSSICO) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/8.10.0/firebase-app.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/8.10.0/firebase-database.js"></script>
     <style>
         :root {
             --blue: #2563eb; --green: #22c55e; --yellow: #facc15; 
-            --red: #ef4444; --purple: #a855f7; --bg: #f8fafc;
+            --red: #ef4444; --purple: #a855f7; --bg: #f1f5f9;
         }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { margin: 0; font-family: Arial, sans-serif; background: var(--bg); color: #1e3a8a; }
         header { background: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
         .logo { font-size: 24px; font-weight: 900; letter-spacing: -1px; }
         .badge { background: var(--blue); color: white; padding: 6px 14px; border-radius: 20px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
-        
-        /* GRADE DE 3 COLUNAS */
+
+        /* GRADE DE 3 COLUNAS - FONTES GIGANTES */
         .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 12px; }
         .card { aspect-ratio: 1/1; border-radius: 20px; padding: 12px; display: flex; flex-direction: column; justify-content: space-between; text-align: center; color: white; font-weight: bold; box-shadow: 0 4px 8px rgba(0,0,0,0.1); border: none; cursor: pointer; }
         .card .time { font-size: 26px; font-weight: 900; }
-        
-        /* STATUS */
+
+        /* CORES DE STATUS */
         .verde { background: var(--green); }
         .amarelo { background: var(--yellow); color: black; }
         .vermelho { background: var(--red); animation: pulse 1.5s infinite; }
@@ -31,10 +31,12 @@
         .roxo { background: var(--purple); }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
 
+        /* NAVEGAÇÃO */
         nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 12px 0 35px 0; border-top: 1px solid #eee; z-index: 100; }
         nav button { border: none; background: none; color: #94a3b8; font-weight: bold; font-size: 9px; text-transform: uppercase; }
-        nav button.active { color: var(--blue); }
+        nav button.active { color: var(--blue); transform: scale(1.1); }
 
+        /* MODAIS */
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; align-items: flex-end; z-index: 200; }
         .modal-content { background: white; width: 100%; border-radius: 40px 40px 0 0; padding: 30px; text-align: center; }
         .btn-main { width: 100%; padding: 20px; background: var(--blue); color: white; border: none; border-radius: 20px; font-weight: 900; font-size: 18px; margin-bottom: 10px; }
@@ -51,6 +53,7 @@
             projectId: "sosrim-592ab"
         };
 
+        // INICIALIZAÇÃO CLÁSSICA
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
@@ -63,7 +66,7 @@
         function render() {
             const root = document.getElementById('app');
             if (!state.user) {
-                root.innerHTML = `<div style="height:100vh; display:flex; align-items:center; justify-content:center; padding:20px;"><div style="background:white; padding:40px; border-radius:40px; width:100%; text-align:center;"><h1 style="font-size:40px; font-weight:900; color:var(--blue);">SOSRIM</h1>\({['Sergio', 'Aderildo', 'Jairo'].map(n => `<button onclick="window.doLogin('\){n}')" class="btn-main">${n}</button>`).join('')}</div></div>`;
+                root.innerHTML = `<div style="height:100vh; display:flex; align-items:center; justify-content:center; padding:20px;"><div style="background:white; padding:40px; border-radius:40px; width:100%; text-align:center; border-top:10px solid var(--blue);"><h1 style="font-size:40px; font-weight:900; color:var(--blue); margin:0;">SOSRIM</h1><p style="color:#94a3b8; font-weight:bold; margin-bottom:30px;">LOGÍSTICA</p>\({['Sergio', 'Aderildo', 'Jairo'].map(n => `<button onclick="window.doLogin('\){n}')" class="btn-main">${n}</button>`).join('')}</div></div>`;
                 return;
             }
 
@@ -85,9 +88,9 @@
                 const maqs = Object.values(state.machines).sort((a,b) => a.id - b.id);
                 return `<div class="grid">\({maqs.map(m => `<div class="card \){m.status}" onclick="window.openEdit('\({m.id}')"><div style="font-size:10px; text-align:left;">#\){m.id}</div><div><div style="font-size:9px; text-transform:uppercase;">\({m.hospital || 'BASE'}</div><div class="time">\){m.time || '--:--'}</div></div></div>`).join('')}</div>`;
             }
-            if (state.tab === 3) return `<div style="padding:20px;"><h2>Hospitais</h2><input id="hName" placeholder="Nome do Hospital"><button onclick="window.addHosp()" class="btn-main">Adicionar</button>\({Object.entries(state.hospitals).map(([id, h]) => `<div style="background:white; padding:15px; border-radius:15px; margin-top:10px; display:flex; justify-content:space-between;"><b>\){h.name}</b><span onclick="window.delHosp('${id}')" style="color:red; cursor:pointer;">X</span></div>`).join('')}</div>`;
-            if (state.tab === 4) return `<div style="padding:20px;"><h2>Frota</h2><input id="mId" type="number" placeholder="Nº da Máquina"><button onclick="window.addMaq()" class="btn-main">Adicionar</button><div class="grid">\({Object.values(state.machines).sort((a,b)=>a.id-b.id).map(m => `<div style="background:white; padding:10px; border-radius:10px; text-align:center; position:relative; color:black;"><b>#\){m.id}</b><div onclick="window.delMaq('${m.id}')" style="position:absolute; top:0; right:5px; color:red; cursor:pointer;">x</div></div>`).join('')}</div></div>`;
-            if (state.tab === 5) return `<div style="padding:25px; background:white; min-height:100vh;"><h2 style="font-size:32px; font-weight:900; border-bottom:4px solid black;">RELATÓRIO</h2>\({state.history.slice().reverse().map(h => `<div style="border-bottom:1px solid #eee; padding:15px 0;"><small>\){h.driver} | \({h.timestamp}</small><p style="font-size:18px; font-weight:bold; text-transform:uppercase;">\){h.details}</p></div>`).join('')}</div>`;
+            if (state.tab === 3) return `<div style="padding:20px;"><h2>Hospitais</h2><input id="hName" placeholder="Nome do Hospital"><button onclick="window.addHosp()" class="btn-main">Adicionar</button>\({Object.entries(state.hospitals).map(([id, h]) => `<div style="background:white; padding:15px; border-radius:15px; margin-top:10px; display:flex; justify-content:space-between; align-items:center;"><b>\){h.name}</b><span onclick="window.delHosp('${id}')" style="color:red; font-weight:bold; cursor:pointer;">X</span></div>`).join('')}</div>`;
+            if (state.tab === 4) return `<div style="padding:20px;"><h2>Máquinas</h2><input id="mId" type="number" placeholder="Nº da Máquina"><button onclick="window.addMaq()" class="btn-main">Adicionar</button><div class="grid" style="margin-top:20px;">\({Object.values(state.machines).sort((a,b)=>a.id-b.id).map(m => `<div style="background:white; padding:10px; border-radius:10px; text-align:center; position:relative; box-shadow:0 2px 5px rgba(0,0,0,0.05); color:black;"><b>#\){m.id}</b><div onclick="window.delMaq('${m.id}')" style="position:absolute; top:0; right:5px; color:red; cursor:pointer;">x</div></div>`).join('')}</div></div>`;
+            if (state.tab === 5) return `<div style="padding:25px; background:white; min-height:100vh;"><h2 style="font-size:32px; font-weight:900; border-bottom:4px solid black; padding-bottom:10px;">RELATÓRIO</h2>\({state.history.slice().reverse().map(h => `<div style="border-bottom:1px solid #eee; padding:15px 0;"><small style="color:#94a3b8; font-weight:bold;">\){h.driver} | \({h.timestamp}</small><p style="font-size:18px; font-weight:bold; text-transform:uppercase;">\){h.details}</p></div>`).join('')}</div>`;
             return '';
         }
 
@@ -99,8 +102,8 @@
                 <h2 style="font-size:30px; font-weight:900;">MAQ #${m.id}</h2>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px;">\({opts.map(o => `<button onclick="window.setTS('\){o.id}')" style="padding:15px; border-radius:15px; border:4px solid \({state.tStatus===o.id?'var(--blue)':'#f4f4f4'}; background:white; font-weight:bold;">\){o.n.toUpperCase()}</button>`).join('')}</div>
                 <div style="display:flex; overflow-x:auto; gap:10px; margin-bottom:20px; padding-bottom:10px;">\({hosps.map(h => `<button onclick="window.setTH('\){h}')" style="padding:10px 20px; border-radius:15px; border:2px solid \({state.tHosp===h?'var(--blue)':'#eee'}; background:\){state.tHosp===h?'var(--blue)':'white'}; color:\({state.tHosp===h?'white':'#64748b'}; white-space:nowrap; font-weight:bold;">\){h}</button>`).join('')}</div>
-                <input id="tTime" type="time" value="${state.tTime}" style="font-size:50px; height:100px; background:#f4f4f4; border:none;">
-                <div style="display:flex; gap:10px;"><button onclick="window.closeEdit()" style="flex:1; color:#94a3b8; font-weight:bold; background:none; border:none;">VOLTAR</button><button onclick="window.saveEdit()" class="btn-main" style="flex:2;">SALVAR</button></div>
+                <input id="tTime" type="time" value="${state.tTime}" style="font-size:50px; height:100px; background:#f4f4f4; border:none; margin-bottom:20px;">
+                <div style="display:flex; gap:10px;"><button onclick="window.closeEdit()" style="flex:1; border:none; background:none; font-weight:bold; color:#94a3b8;">VOLTAR</button><button onclick="window.saveEdit()" class="btn-main" style="flex:2;">SALVAR OK</button></div>
             </div></div>`;
         }
 
