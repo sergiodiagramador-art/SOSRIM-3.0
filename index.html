@@ -4,87 +4,77 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SOSRIM</title>
-    <!-- LINKS OFICIAIS DO GOOGLE (gstatic) -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <!-- USANDO O PACOTE COMPLETO PARA EVITAR ERROS DE CARREGAMENTO -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/8.10.0/firebase.js"></script>
     <style>
-        :root { --blue: #2563eb; --green: #22c55e; --yellow: #facc15; --red: #ef4444; --purple: #a855f7; --bg: #f8fafc; }
-        body { margin: 0; font-family: Arial, sans-serif; background: var(--bg); color: #1e3a8a; }
-        header { background: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 12px; }
-        .card { aspect-ratio: 1/1; border-radius: 20px; padding: 12px; display: flex; flex-direction: column; justify-content: space-between; text-align: center; color: white; font-weight: bold; border: none; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        .card .time { font-size: 26px; font-weight: 900; }
-        .verde { background: var(--green); } .amarelo { background: var(--yellow); color: black; } 
-        .vermelho { background: var(--red); animation: pulse 1.5s infinite; }
-        @keyframes pulse { 50% { opacity: 0.6; } }
-        nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 10px 0 30px 0; border-top: 1px solid #eee; }
-        nav button { border: none; background: none; color: #94a3b8; font-size: 10px; font-weight: bold; }
-        nav button.active { color: var(--blue); }
-        .btn-main { width: 100%; padding: 20px; background: var(--blue); color: white; border: none; border-radius: 20px; font-weight: 900; font-size: 18px; margin-top: 10px; }
+        :root { --blue: #2563eb; --bg: #f8fafc; }
+        body { margin: 0; font-family: Arial, sans-serif; background: var(--blue); color: white; text-align: center; }
+        .container { padding: 40px 20px; }
+        .btn-user { width: 100%; padding: 20px; background: white; color: var(--blue); border: none; border-radius: 20px; font-weight: 900; font-size: 20px; margin-bottom: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        #log { font-size: 11px; color: rgba(255,255,255,0.6); margin-top: 30px; text-align: left; font-family: monospace; }
     </style>
 </head>
 <body>
-    <div id="app">
-        <div id="status" style="padding: 50px; text-align: center;">
-            <h1 style="color: var(--blue); font-size: 40px; font-weight: 900;">SOSRIM</h1>
-            <p id="msg">Conectando...</p>
+    <div id="app" class="container">
+        <h1 style="font-size: 50px; font-weight: 900; margin-bottom: 5px;">SOSRIM</h1>
+        <p id="status">Conectando ao Banco...</p>
+        
+        <div id="users" style="display:none; margin-top:30px;">
+            <p>Escolha seu nome:</p>
+            <button onclick="login('Sergio')" class="btn-user">Sergio</button>
+            <button onclick="login('Aderildo')" class="btn-user">Aderildo</button>
+            <button onclick="login('Jairo')" class="btn-user">Jairo</button>
         </div>
+
+        <div id="log"></div>
     </div>
 
     <script>
+        function log(msg) { document.getElementById('log').innerHTML += "> " + msg + "<br>"; }
+
         const config = {
             apiKey: "AIzaSyA896LR0DJv-TKqwt_DpkgO1MeaRKdKwP4",
             databaseURL: "https://sosrim-592ab-default-rtdb.firebaseio.com",
             projectId: "sosrim-592ab"
         };
 
-        function start() {
-            if (typeof firebase === 'undefined') {
-                document.getElementById('msg').innerHTML = "<b style='color:red;'>Erro de Carregamento.</b><br>Tente desligar o Wi-Fi e usar o 4G.";
-                return;
+        try {
+            if (typeof firebase !== 'undefined') {
+                firebase.initializeApp(config);
+                const db = firebase.database();
+                log("Firebase inicializado.");
+
+                // TESTE DE CONEXÃO EM TEMPO REAL
+                db.ref('.info/connected').on('value', (snap) => {
+                    if (snap.val() === true) {
+                        document.getElementById('status').innerHTML = "CONECTADO ✅";
+                        document.getElementById('users').style.display = 'block';
+                        log("Conexão com o banco OK!");
+                    } else {
+                        log("Tentando estabelecer conexão...");
+                    }
+                });
+
+                // Alerta se demorar mais de 7 segundos
+                setTimeout(() => {
+                    if (document.getElementById('users').style.display === 'none') {
+                        document.getElementById('status').innerHTML = "⚠️ ERRO DE REDE<br><small>O banco de dados não respondeu.</small>";
+                        log("Tempo de espera esgotado.");
+                    }
+                }, 7000);
+
+            } else {
+                log("ERRO: Biblioteca Firebase não carregada.");
             }
-
-            firebase.initializeApp(config);
-            const db = firebase.database();
-            let state = { user: localStorage.getItem('user'), machines: {}, tab: 1 };
-
-            function render() {
-                const root = document.getElementById('app');
-                if (!state.user) {
-                    root.innerHTML = `<div style="padding:40px; text-align:center;"><h1 style="font-size:40px; font-weight:900; color:var(--blue);">SOSRIM</h1>\({['Sergio', 'Aderildo', 'Jairo'].map(n => `<button onclick="doLogin('\){n}')" class="btn-main">${n}</button>`).join('')}</div>`;
-                    return;
-                }
-
-                root.innerHTML = `
-                    <header><b>SOSRIM 🚑</b><span onclick="doLogout()">${state.user} 🚪</span></header>
-                    <main style="padding-bottom: 100px;">${renderTab()}</main>
-                    <nav>
-                        <button onclick="setTab(1)" class="${state.tab===1?'active':''}">PAINEL</button>
-                        <button onclick="setTab(5)" class="${state.tab===5?'active':''}">RELATÓRIO</button>
-                    </nav>
-                `;
-            }
-
-            function renderTab() {
-                if (state.tab === 1) {
-                    const maqs = Object.values(state.machines).sort((a,b)=>a.id-b.id);
-                    return `<div class="grid">\({maqs.map(m => `<div class="card \){m.status}" onclick="editMaq('\({m.id}')"><div>#\){m.id}</div><div class="time">${m.time || '--:--'}</div></div>`).join('')}</div>`;
-                }
-                return `<div style="padding:20px;"><h2>Relatório em Breve</h2></div>`;
-            }
-
-            window.doLogin = (u) => { state.user = u; localStorage.setItem('user', u); render(); };
-            window.doLogout = () => { localStorage.clear(); location.reload(); };
-            window.setTab = (t) => { state.tab = t; render(); };
-            window.editMaq = (id) => {
-                const status = prompt("Novo Status (verde, amarelo, vermelho, azul, roxo):", state.machines[id].status);
-                if (status) db.ref('machines/'+id).update({ status, time: new Date().toLocaleTimeString('pt-BR').slice(0,5) });
-            };
-
-            db.ref('machines').on('value', (s) => { state.machines = s.val() || {}; render(); });
+        } catch (e) {
+            log("FALHA: " + e.message);
         }
 
-        setTimeout(start, 1000);
+        window.login = (u) => {
+            localStorage.setItem('sosrim_user', u);
+            document.getElementById('app').innerHTML = `<h1>Bem-vindo, ${u}!</h1><p>Entrando no sistema...</p>`;
+            setTimeout(() => location.reload(), 1000);
+        };
     </script>
 </body>
 </html>
