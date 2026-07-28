@@ -2,22 +2,36 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SOSRIM</title>
+    <style>
+        body { margin: 0; font-family: 'Arial', sans-serif; background: #f4f7f6; overscroll-none: contain; }
+        .btn { border: none; border-radius: 15px; font-weight: bold; cursor: pointer; transition: 0.2s; text-transform: uppercase; }
+        .btn:active { transform: scale(0.95); }
+        .card { border-radius: 20px; padding: 12px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 4px 6px rgba(0,0,0,0.1); position: relative; overflow: hidden; }
+        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 15px; }
+        
+        /* Cores de Status */
+        .verde { background: #22c55e; color: white; }
+        .amarelo { background: #facc15; color: black; }
+        .vermelho { background: #ef4444; color: white; animation: pulse 1.5s infinite; }
+        .azul { background: #3b82f6; color: white; }
+        .roxo { background: #a855f7; color: white; }
+        
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+        
+        /* Modal de Edição */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: flex-end; z-index: 100; }
+        .modal-content { background: white; width: 100%; border-radius: 40px 40px 0 0; padding: 30px; box-sizing: border-box; text-align: center; max-height: 90vh; overflow-y: auto; }
+    </style>
 </head>
-<body style="margin:0; font-family: sans-serif; background: #f3f4f6;">
-    <div id="app">
-        <div style="padding: 50px; text-align: center;">
-            <h1 style="color: #1e3a8a;">SOSRIM</h1>
-            <p>Carregando sistema...</p>
-        </div>
-    </div>
+<body>
+    <div id="app"></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, onValue, set, push, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, onValue, push, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        // CONFIGURAÇÃO REAL DO SEU FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyB_REPLACE_WITH_REAL_KEY",
             authDomain: "sosrim-592ab.firebaseapp.com",
@@ -25,90 +39,145 @@
             projectId: "sosrim-592ab"
         };
 
-        try {
-            const app = initializeApp(firebaseConfig);
-            const db = getDatabase(app);
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
 
-            let state = {
-                user: localStorage.getItem('sosrim_user') || null,
-                machines: {},
-                history: [],
-                tab: 1
-            };
+        let state = {
+            user: localStorage.getItem('sosrim_user') || null,
+            machines: {},
+            history: [],
+            tab: 1,
+            editingId: null,
+            tempStatus: '',
+            tempHosp: '',
+            tempTime: ''
+        };
 
-            function render() {
-                const root = document.getElementById('app');
-                
-                // TELA DE LOGIN
-                if (!state.user) {
-                    root.innerHTML = `
-                        <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px;">
-                            <div style="background: white; padding: 40px; border-radius: 30px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; border-top: 10px solid #2563eb;">
-                                <h1 style="margin: 0; font-size: 40px; color: #1e3a8a;">SOSRIM</h1>
-                                <p style="color: #9ca3af; margin-bottom: 30px;">Selecione seu nome</p>
-                                <button onclick="window.doLogin('Sergio')" style="width: 100%; padding: 20px; background: #2563eb; color: white; border: none; border-radius: 15px; font-size: 20px; font-weight: bold; margin-bottom: 10px; cursor: pointer;">SERGIO</button>
-                                <button onclick="window.doLogin('Aderildo')" style="width: 100%; padding: 20px; background: #2563eb; color: white; border: none; border-radius: 15px; font-size: 20px; font-weight: bold; margin-bottom: 10px; cursor: pointer;">ADERILDO</button>
-                                <button onclick="window.doLogin('Jairo')" style="width: 100%; padding: 20px; background: #2563eb; color: white; border: none; border-radius: 15px; font-size: 20px; font-weight: bold; cursor: pointer;">JAIRO</button>
+        const hospitals = ['Erasto Gaertner', 'Erastinho', 'Marcelino Champagnat', 'Nações', 'Oswaldo Cruz', 'Fraturas XV', 'Pilar', 'Graças', 'Nossa Saúde', 'INC', 'Trabalhador', 'Marillac', 'Papa Francisco', 'Yoshimi', 'Alberto', 'BASE'];
+
+        function render() {
+            const root = document.getElementById('app');
+            if (!state.user) { renderLogin(root); return; }
+            renderMain(root);
+        }
+
+        function renderLogin(root) {
+            root.innerHTML = `
+                <div style="height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px;">
+                    <div style="background: white; padding: 40px; border-radius: 35px; width: 100%; max-width: 400px; text-align: center; border-top: 10px solid #2563eb; box-shadow: 0 15px 35px rgba(0,0,0,0.15);">
+                        <h1 style="color: #1e3a8a; margin: 0; font-size: 45px; letter-spacing: -2px;">SOSRIM</h1>
+                        <p style="color: #9ca3af; font-weight: bold; margin-bottom: 40px;">LOGÍSTICA</p>
+                        ${['Sergio', 'Aderildo', 'Jairo'].map(n => `
+                            <button class="btn" onclick="window.doLogin('\({n}')" style="width: 100%; padding: 22px; background: #2563eb; color: white; font-size: 20px; margin-bottom: 12px; shadow: 0 5px 15px rgba(37,99,235,0.2);">\){n}</button>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderMain(root) {
+            const machines = Object.values(state.machines).sort((a,b) => a.id - b.id);
+            
+            root.innerHTML = `
+                <header style="background: white; padding: 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 50; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+                    <b style="font-size: 24px; color: #1e3a8a;">SOSRIM 🚑</b>
+                    <div onclick="window.doLogout()" style="background: #2563eb; color: white; padding: 8px 18px; border-radius: 20px; font-size: 12px; font-weight: bold;">${state.user.toUpperCase()}</div>
+                </header>
+
+                ${state.tab === 1 ? `
+                    <div class="grid">
+                        ${machines.map(m => `
+                            <div class="card \({m.status}" onclick="window.openEdit('\){m.id}')" style="aspect-ratio: 1/1;">
+                                <b style="font-size: 10px; opacity: 0.8;">#${m.id}</b>
+                                <div style="text-align: center;">
+                                    <div style="font-size: 9px; font-weight: bold; margin-bottom: 3px; white-space: nowrap; overflow: hidden;">${m.hospital || 'BASE'}</div>
+                                    <div style="font-size: 24px; font-weight: 900;">${m.time || '--:--'}</div>
+                                </div>
                             </div>
-                        </div>
-                    `;
-                    return;
-                }
+                        `).join('')}
+                    </div>
+                ` : `
+                    <div style="padding: 20px; font-family: Arial;">
+                        <h2 style="border-bottom: 6px solid black; padding-bottom: 10px;">RESUMO</h2>
+                        ${state.history.slice().reverse().map(h => `
+                            <div style="padding: 15px 0; border-bottom: 1px solid #eee;">
+                                <small style="color: #9ca3af; font-weight: bold;">\({h.driver} • \){h.timestamp}</small>
+                                <div style="font-size: 18px; font-weight: bold; margin-top: 5px;">${h.details}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `}
 
-                // TELA PRINCIPAL
-                const machines = Object.values(state.machines).sort((a,b) => a.id - b.id);
-                
-                root.innerHTML = `
-                    <div style="min-height: 100vh; padding-bottom: 100px;">
-                        <div style="background: white; padding: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
-                            <b style="color: #1e3a8a; font-size: 24px;">SOSRIM 🚑</b>
-                            <span style="background: #2563eb; color: white; padding: 5px 15px; border-radius: 20px; font-size: 12px; font-weight: bold;">${state.user.toUpperCase()}</span>
+                <nav style="position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 20px 0 35px 0; border-top: 1px solid #eee; box-shadow: 0 -10px 20px rgba(0,0,0,0.05);">
+                    <button onclick="window.setTab(1)" style="border: none; background: \({state.tab === 1 ? '#eff6ff' : 'none'}; color: \){state.tab === 1 ? '#2563eb' : '#d1d5db'}; padding: 12px 25px; border-radius: 15px; font-weight: bold; font-size: 14px;">PAINEL</button>
+                    <button onclick="window.setTab(2)" style="border: none; background: \({state.tab === 2 ? '#eff6ff' : 'none'}; color: \){state.tab === 2 ? '#2563eb' : '#d1d5db'}; padding: 12px 25px; border-radius: 15px; font-weight: bold; font-size: 14px;">RESUMO</button>
+                </nav>
+
+                ${state.editingId ? renderModal() : ''}
+            `;
+        }
+
+        function renderModal() {
+            const statuses = [
+                {id:'verde', n:'Base', c:'#22c55e'}, {id:'amarelo', n:'Rua', c:'#facc15'}, 
+                {id:'vermelho', n:'Recolher', c:'#ef4444'}, {id:'azul', n:'Saindo', c:'#3b82f6'}, {id:'roxo', n:'Voltando', c:'#a855f7'}
+            ];
+            
+            return `
+                <div class="modal-overlay">
+                    <div class="modal-content">
+                        <h2 style="margin-top: 0; color: #1e3a8a; font-size: 28px; text-decoration: underline italic;">MAQ #${state.editingId}</h2>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 25px 0;">
+                            ${statuses.map(s => `
+                                <button onclick="window.setTempStatus('\({s.id}')" style="padding: 15px; border-radius: 15px; border: 4px solid \){state.tempStatus === s.id ? '#2563eb' : '#f4f4f4'}; background: white; display: flex; align-items: center; gap: 10px; font-weight: bold; font-size: 12px;">
+                                    <div style="width: 15px; height: 15px; border-radius: 50%; background: \({s.c}"></div> \){s.n.toUpperCase()}
+                                </button>
+                            `).join('')}
                         </div>
 
-                        <div style="padding: 15px;">
-                            ${state.tab === 1 ? `
-                                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
-                                    ${machines.map(m => `
-                                        <div style="aspect-ratio: 1/1; border-radius: 15px; padding: 10px; display: flex; flex-direction: column; justify-content: space-between; color: \({m.status === 'amarelo' ? 'black' : 'white'}; background: \){m.status === 'verde' ? '#22c55e' : (m.status === 'amarelo' ? '#facc15' : (m.status === 'vermelho' ? '#ef4444' : (m.status === 'azul' ? '#3b82f6' : '#a855f7')))}">
-                                            <b style="font-size: 10px; opacity: 0.7;">#${m.id}</b>
-                                            <div style="text-align: center;">
-                                                <div style="font-size: 9px; font-weight: bold; overflow: hidden; white-space: nowrap;">${m.hospital || 'BASE'}</div>
-                                                <div style="font-size: 20px; font-weight: bold;">${m.time || '--:--'}</div>
-                                            </div>
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            ` : `
-                                <div style="background: white; padding: 20px; border-radius: 20px; min-height: 60vh;">
-                                    <h2 style="border-bottom: 4px solid black; padding-bottom: 10px; color: #1e3a8a;">RESUMO</h2>
-                                    ${state.history.slice().reverse().map(h => `
-                                        <div style="border-bottom: 1px solid #eee; padding: 15px 0;">
-                                            <small style="color: #9ca3af;">\({h.driver} • \){h.timestamp}</small>
-                                            <div style="font-size: 16px; font-weight: bold; margin-top: 5px; text-transform: uppercase;">${h.details}</div>
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            `}
+                        <div style="overflow-x: auto; white-space: nowrap; padding: 10px 0; margin-bottom: 25px;">
+                            ${hospitals.map(h => `
+                                <button onclick="window.setTempHosp('\({h}')" style="display: inline-block; padding: 15px 25px; border-radius: 15px; margin-right: 8px; border: 3px solid \){state.tempHosp === h ? '#2563eb' : '#eee'}; background: \({state.tempHosp === h ? '#2563eb' : 'white'}; color: \){state.tempHosp === h ? 'white' : '#666'}; font-weight: bold; font-size: 11px;">${h.toUpperCase()}</button>
+                            `).join('')}
                         </div>
 
-                        <div style="position: fixed; bottom: 0; left: 0; right: 0; background: white; display: flex; justify-content: space-around; padding: 20px; border-top: 1px solid #eee; box-shadow: 0 -5px 15px rgba(0,0,0,0.05);">
-                            <button onclick="window.setTab(1)" style="border: none; background: \({state.tab === 1 ? '#eff6ff' : 'none'}; color: \){state.tab === 1 ? '#2563eb' : '#d1d5db'}; padding: 10px 20px; border-radius: 10px; font-weight: bold;">PAINEL</button>
-                            <button onclick="window.setTab(2)" style="border: none; background: \({state.tab === 2 ? '#eff6ff' : 'none'}; color: \){state.tab === 2 ? '#2563eb' : '#d1d5db'}; padding: 10px 20px; border-radius: 10px; font-weight: bold;">RESUMO</button>
+                        <input id="timeIn" type="time" value="${state.tempTime}" style="width: 100%; padding: 20px; border-radius: 20px; border: none; background: #f4f4f4; font-size: 45px; font-weight: 900; text-align: center; color: #1e3a8a; margin-bottom: 30px;">
+
+                        <div style="display: flex; gap: 15px; padding-bottom: 20px;">
+                            <button onclick="window.closeEdit()" style="flex: 1; padding: 20px; background: none; border: none; color: #9ca3af; font-weight: bold;">CANCELAR</button>
+                            <button onclick="window.saveEdit()" style="flex: 2; padding: 25px; background: #2563eb; color: white; border-radius: 25px; border: none; font-size: 20px; font-weight: 900; box-shadow: 0 10px 20px rgba(37,99,235,0.3);">SALVAR OK</button>
                         </div>
                     </div>
-                `;
-            }
-
-            window.doLogin = (u) => { state.user = u; localStorage.setItem('sosrim_user', u); render(); };
-            window.setTab = (t) => { state.tab = t; render(); };
-
-            onValue(ref(db, 'machines'), (snap) => { state.machines = snap.val() || {}; render(); });
-            onValue(ref(db, 'history'), (snap) => { state.history = Object.values(snap.val() || {}); render(); });
-            
-            render();
-        } catch (e) {
-            document.getElementById('app').innerHTML = "Erro de carregamento: " + e.message;
+                </div>
+            `;
         }
+
+        // FUNÇÕES GLOBAIS
+        window.doLogin = (u) => { state.user = u; localStorage.setItem('sosrim_user', u); render(); };
+        window.doLogout = () => { if(confirm('Sair?')){ localStorage.removeItem('sosrim_user'); location.reload(); }};
+        window.setTab = (t) => { state.tab = t; render(); };
+        window.openEdit = (id) => {
+            const m = state.machines[id];
+            state.editingId = id;
+            state.tempStatus = m.status;
+            state.tempHosp = m.hospital;
+            state.tempTime = m.time || '00:00';
+            render();
+        };
+        window.closeEdit = () => { state.editingId = null; render(); };
+        window.setTempStatus = (s) => { state.tempStatus = s; render(); };
+        window.setTempHosp = (h) => { state.tempHosp = h; render(); };
+        window.saveEdit = () => {
+            const timeVal = document.getElementById('timeIn').value;
+            update(ref(db, `machines/${state.editingId}`), { status: state.tempStatus, hospital: state.tempHosp, time: timeVal });
+            push(ref(db, 'history'), { driver: state.user, timestamp: new Date().toLocaleTimeString('pt-BR'), action: "MÁQUINA", details: `MAQ#\({state.editingId} EM \){state.tempHosp} (${state.tempStatus.toUpperCase()})` });
+            state.editingId = null;
+            render();
+        };
+
+        onValue(ref(db, 'machines'), (snap) => { state.machines = snap.val() || {}; render(); });
+        onValue(ref(db, 'history'), (snap) => { state.history = Object.values(snap.val() || {}); render(); });
     </script>
 </body>
 </html>
