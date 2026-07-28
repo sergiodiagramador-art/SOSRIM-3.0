@@ -1,16 +1,126 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>TESTE SOSRIM</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SOSRIM</title>
+    <style>
+        :root { --blue: #2563eb; --green: #22c55e; --yellow: #facc15; --red: #ef4444; --purple: #a855f7; --bg: #f1f5f9; }
+        body { margin: 0; font-family: Arial, sans-serif; background: var(--bg); color: #1e3a8a; }
+        #loading-screen { position: fixed; inset: 0; background: white; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 999; }
+        .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--blue); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        header { background: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
+        .logo { font-size: 24px; font-weight: 900; }
+        .badge { background: var(--blue); color: white; padding: 6px 14px; border-radius: 20px; font-size: 10px; font-weight: bold; }
+        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 12px; }
+        .card { aspect-ratio: 1/1; border-radius: 20px; padding: 12px; display: flex; flex-direction: column; justify-content: space-between; text-align: center; color: white; font-weight: bold; box-shadow: 0 4px 8px rgba(0,0,0,0.1); border: none; }
+        .card .time { font-size: 26px; font-weight: 900; }
+        .verde { background: var(--green); } .amarelo { background: var(--yellow); color: black; } 
+        .vermelho { background: var(--red); animation: pulse 1.5s infinite; } .azul { background: var(--blue); } .roxo { background: var(--purple); }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+        nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 12px 0 35px 0; border-top: 1px solid #eee; z-index: 100; }
+        nav button { border: none; background: none; color: #94a3b8; font-weight: bold; font-size: 9px; }
+        nav button.active { color: var(--blue); }
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; align-items: flex-end; z-index: 200; }
+        .modal-content { background: white; width: 100%; border-radius: 40px 40px 0 0; padding: 30px; text-align: center; }
+        .btn-main { width: 100%; padding: 20px; background: var(--blue); color: white; border: none; border-radius: 20px; font-weight: 900; font-size: 18px; margin-bottom: 10px; }
+    </style>
 </head>
-<body style="background: yellow; color: black; text-align: center; padding: 50px; font-family: sans-serif;">
-    <h1 style="font-size: 50px;">O CÓDIGO ESTÁ FUNCIONANDO!</h1>
-    <p style="font-size: 24px;">Se você está vendo esta tela amarela, o GitHub Pages está OK.</p>
-    <p>Hora: <span id="hora"></span></p>
+<body>
+    <div id="loading-screen">
+        <div class="spinner"></div>
+        <p id="load-msg" style="margin-top:20px; font-weight:bold;">Iniciando SOSRIM...</p>
+    </div>
+
+    <div id="app"></div>
+
+    <!-- CARREGAMENTO SEGURO DO FIREBASE -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/8.10.0/firebase-app.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/8.10.0/firebase-database.js"></script>
+
     <script>
-        document.getElementById('hora').innerText = new Date().toLocaleTimeString();
-        console.log("Teste de log ok");
+        window.onerror = function(m, u, l) {
+            document.getElementById('load-msg').innerHTML = "ERRO: " + m + " (L:" + l + ")";
+            document.getElementById('load-msg').style.color = "red";
+        };
+
+        const config = {
+            apiKey: "AIzaSyA896LR0DJv-TKqwt_DpkgO1MeaRKdKwP4",
+            databaseURL: "https://sosrim-592ab-default-rtdb.firebaseio.com",
+            projectId: "sosrim-592ab"
+        };
+
+        if (typeof firebase !== 'undefined') {
+            firebase.initializeApp(config);
+            const db = firebase.database();
+
+            let state = {
+                user: localStorage.getItem('sosrim_user') || null,
+                machines: {}, hospitals: {}, history: [],
+                tab: 1, editingId: null, tStatus: '', tHosp: '', tTime: ''
+            };
+
+            function render() {
+                document.getElementById('loading-screen').style.display = 'none';
+                const root = document.getElementById('app');
+                if (!state.user) {
+                    root.innerHTML = `<div style="height:100vh; display:flex; align-items:center; justify-content:center; padding:20px;"><div style="background:white; padding:40px; border-radius:40px; width:100%; text-align:center;"><h1 style="font-size:40px; font-weight:900; color:var(--blue);">SOSRIM</h1>\({['Sergio', 'Aderildo', 'Jairo'].map(n => `<button onclick="window.doLogin('\){n}')" class="btn-main">${n}</button>`).join('')}</div></div>`;
+                    return;
+                }
+
+                root.innerHTML = `
+                    <header><div class="logo">SOSRIM 🚑</div><div class="badge" onclick="window.doLogout()">${state.user}</div></header>
+                    <main style="padding-bottom:120px;">${renderTab()}</main>
+                    <nav>
+                        <button onclick="window.setTab(1)" class="${state.tab===1?'active':''}">PAINEL</button>
+                        <button onclick="window.setTab(3)" class="${state.tab===3?'active':''}">HOSP</button>
+                        <button onclick="window.setTab(4)" class="${state.tab===4?'active':''}">MAQ</button>
+                        <button onclick="window.setTab(5)" class="${state.tab===5?'active':''}">RELAT</button>
+                    </nav>
+                    ${state.editingId ? renderModal() : ''}
+                `;
+            }
+
+            function renderTab() {
+                if (state.tab === 1) {
+                    const maqs = Object.values(state.machines).sort((a,b) => a.id - b.id);
+                    return `<div class="grid">\({maqs.map(m => `<div class="card \){m.status}" onclick="window.openEdit('\({m.id}')"><div style="font-size:10px; text-align:left;">#\){m.id}</div><div><div style="font-size:9px;">\({m.hospital || 'BASE'}</div><div class="time">\){m.time || '--:--'}</div></div></div>`).join('')}</div>`;
+                }
+                if (state.tab === 3) return `<div style="padding:20px;"><h2>Hospitais</h2><input id="hName" style="width:100%; padding:15px; margin-bottom:10px;" placeholder="Nome do Hospital"><button onclick="window.addHosp()" class="btn-main">Adicionar</button>\({Object.entries(state.hospitals).map(([id, h]) => `<div style="background:white; padding:15px; border-radius:15px; margin-top:10px; display:flex; justify-content:space-between;"><b>\){h.name}</b><span onclick="window.delHosp('${id}')" style="color:red;">X</span></div>`).join('')}</div>`;
+                if (state.tab === 4) return `<div style="padding:20px;"><h2>Frota</h2><input id="mId" type="number" style="width:100%; padding:15px; margin-bottom:10px;" placeholder="Nº Máquina"><button onclick="window.addMaq()" class="btn-main">Adicionar</button></div>`;
+                if (state.tab === 5) return `<div style="padding:25px; background:white; min-height:100vh;"><h2 style="font-size:32px; font-weight:900;">RELATÓRIO</h2>\({state.history.slice().reverse().map(h => `<div style="border-bottom:1px solid #eee; padding:15px 0;"><small>\){h.driver} | \({h.timestamp}</small><p style="font-size:18px; font-weight:bold;">\){h.details}</p></div>`).join('')}</div>`;
+                return '';
+            }
+
+            function renderModal() {
+                const m = state.machines[state.editingId];
+                const opts = [{id:'verde',n:'Base'},{id:'amarelo',n:'Rua'},{id:'vermelho',n:'Recolher'},{id:'azul',n:'Saindo'},{id:'roxo',n:'Voltando'}];
+                return `<div class="modal"><div class="modal-content"><h2>MAQ #\({m.id}</h2><div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px;">\){opts.map(o => `<button onclick="window.setTS('\({o.id}')" style="padding:15px; border-radius:15px; border:2px solid \){state.tStatus===o.id?'var(--blue)':'#eee'}; background:white; font-weight:bold;">\({o.n.toUpperCase()}</button>`).join('')}</div><input id="tTime" type="time" value="\){state.tTime}" style="font-size:40px; width:100%; text-align:center; margin-bottom:20px;"><div style="display:flex; gap:10px;"><button onclick="window.closeEdit()" style="flex:1;">VOLTAR</button><button onclick="window.saveEdit()" class="btn-main" style="flex:2; margin:0;">SALVAR</button></div></div></div>`;
+            }
+
+            window.doLogin = (u) => { state.user = u; localStorage.setItem('sosrim_user', u); render(); };
+            window.doLogout = () => { localStorage.removeItem('sosrim_user'); location.reload(); };
+            window.setTab = (t) => { state.tab = t; render(); };
+            window.openEdit = (id) => { const m = state.machines[id]; state.editingId = id; state.tStatus = m.status; state.tHosp = m.hospital; state.tTime = m.time || '00:00'; render(); };
+            window.closeEdit = () => { state.editingId = null; render(); };
+            window.setTS = (s) => { state.tStatus = s; render(); };
+            window.saveEdit = () => {
+                const time = document.getElementById('tTime').value;
+                db.ref('machines/'+state.editingId).update({ status: state.tStatus, time: time });
+                db.ref('history').push({ driver: state.user, timestamp: new Date().toLocaleTimeString('pt-BR'), details: `MAQ#\({state.editingId} (\){state.tStatus.toUpperCase()})` });
+                state.editingId = null; render();
+            };
+            window.addHosp = () => { const n = document.getElementById('hName').value; if(n){ db.ref('hospitals').push({ name: n }); document.getElementById('hName').value=''; }};
+            window.addMaq = () => { const id = document.getElementById('mId').value; if(id){ db.ref('machines/'+id).set({ id: id, status: 'verde', hospital: 'BASE', time: '00:00' }); document.getElementById('mId').value=''; }};
+
+            db.ref('machines').on('value', (s) => { state.machines = s.val() || {}; render(); });
+            db.ref('hospitals').on('value', (s) => { state.hospitals = s.val() || {}; render(); });
+            db.ref('history').on('value', (s) => { state.history = Object.values(s.val() || {}); render(); });
+        } else {
+            document.getElementById('load-msg').innerHTML = "ERRO: O navegador bloqueou o Firebase.";
+        }
     </script>
 </body>
 </html>
