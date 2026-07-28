@@ -10,7 +10,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, onValue, set, push, update, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        // SUA CONFIGURAÇÃO DO FIREBASE (sosrim-592ab)
         const firebaseConfig = {
             apiKey: "AIzaSyB_REPLACE_WITH_REAL_KEY",
             authDomain: "sosrim-592ab.firebaseapp.com",
@@ -40,6 +39,7 @@
 
         const render = () => {
             const appDiv = document.getElementById('app');
+            if (!appDiv) return;
             if (!window.state.user) { renderLogin(appDiv); return; }
             renderMain(appDiv);
             if (window.lucide) lucide.createIcons();
@@ -49,9 +49,9 @@
             container.innerHTML = `
                 <div class="min-h-screen flex items-center justify-center bg-gray-50 p-6 font-sans">
                     <div class="bg-white p-8 rounded-[40px] shadow-2xl w-full max-w-md text-center border-t-8 border-blue-600">
-                        <div class="text-7xl mb-6">🚑</div>
-                        <h1 class="text-4xl font-black text-blue-900 mb-2 tracking-tighter uppercase">SOSRIM</h1>
-                        <p class="text-gray-400 mb-10 font-medium">Controle de Logística</p>
+                        <div class="text-7xl mb-6 text-center">🚑</div>
+                        <h1 class="text-4xl font-black text-blue-900 mb-2 tracking-tighter uppercase text-center">SOSRIM</h1>
+                        <p class="text-gray-400 mb-10 font-medium text-center">Controle de Logística</p>
                         <div class="space-y-4">
                             ${['Sergio', 'Aderildo', 'Jairo'].map(name => `
                                 <button onclick="login('${name}')" class="w-full py-5 bg-blue-600 text-white rounded-2xl font-black text-xl shadow-lg shadow-blue-100 active:scale-95 transition-all uppercase tracking-widest">
@@ -96,9 +96,9 @@
         const renderTabContent = () => {
             switch(window.state.currentTab) {
                 case 1: return renderTab1();
-                case 2: return renderTab2();
-                case 3: return renderTab3();
-                case 4: return renderTab4();
+                case 2: return `<div class="p-20 text-center font-black text-gray-300 uppercase italic">Mapa em breve</div>`;
+                case 3: return `<div class="p-20 text-center font-black text-gray-300 uppercase italic">Hospitais Cadastrados</div>`;
+                case 4: return `<div class="p-20 text-center font-black text-gray-300 uppercase italic">Configuração Máquinas</div>`;
                 case 5: return renderTab5();
                 default: return renderTab1();
             }
@@ -119,6 +119,7 @@
             const machines = Object.values(window.state.machines).sort((a,b) => a.id - b.id);
             return `
                 <div class="grid grid-cols-3 gap-3">
+                    ${machines.length === 0 ? '<p class="col-span-3 text-center p-10 text-gray-300 font-bold uppercase italic">Nenhuma máquina cadastrada</p>' : ''}
                     ${machines.map(m => `
                         <div onclick="openQuickStatus('\({m.id}')" class="aspect-square rounded-2xl p-3 flex flex-col justify-between shadow-md relative overflow-hidden transition-all active:scale-95 border-2 \){m.status === 'vermelho' ? 'border-red-500' : 'border-transparent'} ${getStatusClass(m.status)}">
                             <div class="text-[10px] font-black opacity-60">#${m.id}</div>
@@ -126,12 +127,10 @@
                                 <span class="text-[9px] font-bold truncate w-full opacity-90 mb-1 uppercase leading-tight">${m.hospital || 'BASE'}</span>
                                 <span class="text-2xl font-black leading-none tracking-tighter">${m.time || '--:--'}</span>
                             </div>
-                            ${m.status === 'vermelho' ? '<div class="absolute inset-0 bg-red-600 animate-pulse opacity-20 pointer-events-none"></div>' : ''}
                         </div>
                     `).join('')}
                 </div>
                 ${window.state.quickStatusId ? renderQuickStatusSelector() : ''}
-                ${window.state.showGpsPrompt ? renderGpsPrompt() : ''}
             `;
         };
 
@@ -164,9 +163,9 @@
 
             return `
                 <div class="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-end">
-                    <div class="bg-white w-full p-6 rounded-t-[40px] animate-slide-up max-h-[90vh] overflow-y-auto pb-12 text-center">
+                    <div class="bg-white w-full p-6 rounded-t-[40px] animate-slide-up max-h-[90vh] overflow-y-auto pb-12">
                         <div class="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6"></div>
-                        <h3 class="text-2xl font-black text-blue-900 mb-6 italic underline tracking-tighter uppercase">Máquina #${m.id}</h3>
+                        <h3 class="text-2xl font-black text-blue-900 mb-6 italic underline tracking-tighter uppercase text-center">Máquina #${m.id}</h3>
                         <div class="grid grid-cols-2 gap-2 mb-6">
                             ${statusOptions.map(opt => `
                                 <button onclick="selectStatus('\({opt.id}')" class="flex items-center gap-2 p-3 rounded-2xl border-2 \){window.state.tempStatus === opt.id ? 'border-blue-600 bg-blue-50' : 'border-gray-50'}">
@@ -190,29 +189,15 @@
             `;
         };
 
-        const renderGpsPrompt = () => `
-            <div class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
-                <div class="bg-white w-full rounded-[40px] p-10 shadow-2xl text-center">
-                    <div class="text-6xl mb-6">📍</div>
-                    <h3 class="text-2xl font-black text-blue-900 mb-2">Você está no Hospital?</h3>
-                    <p class="text-gray-400 mb-10">O que deseja registrar agora?</p>
-                    <div class="grid grid-cols-1 gap-3">
-                        <button onclick="window.state.showGpsPrompt=false;render()" class="bg-blue-600 text-white p-5 rounded-3xl font-black">ENTREGAR MÁQUINAS</button>
-                        <button onclick="window.state.showGpsPrompt=false;render()" class="bg-red-500 text-white p-5 rounded-3xl font-black">RECOLHER MÁQUINAS</button>
-                        <button onclick="window.state.showGpsPrompt=false;render()" class="mt-4 text-gray-300 font-bold uppercase text-xs">Ignorar</button>
-                    </div>
-                </div>
-            </div>
-        `;
-
         const renderTab5 = () => {
             const hist = window.state.history || [];
             return `
                 <div class="p-6 bg-white min-h-screen" style="font-family: Arial, sans-serif;">
-                    <h2 class="text-3xl font-black border-b-8 border-black pb-4 mb-10 text-blue-900 uppercase">RELATÓRIO</h2>
+                    <h2 class="text-3xl font-black border-b-8 border-black pb-4 mb-10 text-blue-900 uppercase tracking-tighter">RELATÓRIO</h2>
                     <div class="space-y-8">
+                        ${hist.length === 0 ? '<p class="text-gray-300 italic text-center p-10 font-bold uppercase">Nenhuma movimentação</p>' : ''}
                         ${hist.slice().reverse().map(l => `
-                            <div class="border-b-2 border-gray-50 pb-6">
+                            <div class="border-b-2 border-gray-50 pb-6 text-left">
                                 <div class="flex justify-between text-[10px] font-black text-gray-400 mb-2 uppercase"><span>\({l.driver}</span><span>\){l.timestamp}</span></div>
                                 <p class="text-[18px] font-bold text-gray-900 uppercase"><span class="text-blue-600">\({l.action}:</span> \){l.details}</p>
                             </div>
@@ -221,10 +206,6 @@
                 </div>
             `;
         };
-
-        const renderTab2 = () => `<div class="p-20 text-center font-black text-gray-300 uppercase tracking-widest italic">Mapa em breve</div>`;
-        const renderTab3 = () => `<div class="p-20 text-center font-black text-gray-300 uppercase tracking-widest italic">Hospitais (Cadastrados no sistema)</div>`;
-        const renderTab4 = () => `<div class="p-20 text-center font-black text-gray-300 uppercase tracking-widest italic">Máquinas (Configuração total)</div>`;
 
         onValue(ref(db, 'machines'), (snap) => { window.state.machines = snap.val() || {}; render(); });
         onValue(ref(db, 'history'), (snap) => { window.state.history = Object.values(snap.val() || {}); render(); });
@@ -235,5 +216,5 @@
         .animate-slide-up { animation: slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
     </style>
 </head>
-<body class="overscroll-none overflow-hidden"><div id="app"></div></body>
+<body class="overscroll-none"><div id="app"></div></body>
 </html>
