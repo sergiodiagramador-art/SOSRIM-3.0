@@ -3,109 +3,193 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SOSRIM FULL</title>
+    <title>SOSRIM PRO</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/8.10.0/firebase.js"></script>
     <style>
+        :root { --blue: #2563eb; --green: #22c55e; --yellow: #facc15; --red: #ef4444; --purple: #a855f7; }
         body { margin: 0; font-family: sans-serif; background: #f1f5f9; color: #1e3a8a; padding-bottom: 100px; }
         header { background: #fff; padding: 15px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
         
-        /* GRID DE 3 COLUNAS */
+        /* GRID 3 COLUNAS */
         .grid { display: block; padding: 5px; overflow: hidden; }
         .card { width: 30%; aspect-ratio: 1/1; float: left; margin: 1.5%; border-radius: 15px; color: white; text-align: center; font-weight: bold; padding: 5px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-around; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: none; }
         
-        .verde { background: #22c55e; } .amarelo { background: #facc15; color: black; } .vermelho { background: #ef4444; animation: pulse 1.5s infinite; }
-        .azul { background: #2563eb; } .roxo { background: #a855f7; }
+        .verde { background: var(--green); } .amarelo { background: var(--yellow); color: black; } 
+        .vermelho { background: var(--red); animation: pulse 1.5s infinite; }
+        .azul { background: var(--blue); } .roxo { background: var(--purple); }
         @keyframes pulse { 50% { opacity: 0.6; } }
 
         .time { font-size: 20px; font-weight: 900; }
-        .hosp { font-size: 8px; text-transform: uppercase; opacity: 0.9; }
+        .hosp-name { font-size: 8px; text-transform: uppercase; opacity: 0.9; }
 
-        /* MENU INFERIOR */
+        /* NAVEGAÇÃO 5 ABAS */
         nav { position: fixed; bottom: 0; width: 100%; background: #fff; display: flex; padding: 10px 0 30px 0; border-top: 1px solid #ddd; z-index: 100; }
-        nav button { flex: 1; border: none; background: none; font-weight: bold; color: #64748b; font-size: 10px; }
-        nav .active { color: #2563eb; transform: scale(1.1); }
+        nav button { flex: 1; border: none; background: none; font-weight: bold; color: #64748b; font-size: 9px; }
+        nav .active { color: var(--blue); transform: scale(1.1); }
 
-        /* MODAL */
-        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 20px; }
-        .modal-content { background: white; width: 100%; border-radius: 20px; padding: 20px; text-align: center; }
-        .btn-status { width: 100%; padding: 15px; margin: 5px 0; border-radius: 12px; border: none; font-weight: bold; color: white; text-transform: uppercase; }
-        
+        /* FORMULÁRIOS */
+        .page { padding: 20px; display: none; }
+        .page.active { display: block; }
         input { width: 100%; padding: 15px; margin: 10px 0; border-radius: 10px; border: 1px solid #ccc; font-size: 16px; box-sizing: border-box; }
-        .btn-add { width: 100%; padding: 15px; background: #2563eb; color: white; border: none; border-radius: 10px; font-weight: bold; }
+        .btn-blue { width: 100%; padding: 15px; background: var(--blue); color: white; border: none; border-radius: 10px; font-weight: bold; margin-top: 5px; }
+        
+        /* MODAL */
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: flex; align-items: flex-end; z-index: 200; }
+        .modal-content { background: white; width: 100%; border-radius: 30px 30px 0 0; padding: 25px; text-align: center; max-height: 80vh; overflow-y: auto; }
     </style>
 </head>
 <body>
-    <div id="app"></div>
+    <div id="app">
+        <header><span>SOSRIM 🚑</span><span id="user-display">---</span></header>
+        
+        <!-- ABA 1: PAINEL PRINCIPAL -->
+        <div id="tab1" class="page active"><div id="grid-maquinas" class="grid"></div></div>
+
+        <!-- ABA 2: GPS E MATERIAIS -->
+        <div id="tab2" class="page">
+            <h2>GPS e Materiais</h2>
+            <div style="background:white; padding:20px; border-radius:15px;">
+                <p>📍 <b>Localização em tempo real ativa</b></p>
+                <input id="mat-obs" placeholder="Observação de material extra...">
+                <button class="btn-blue" onclick="salvarMaterial()">REGISTRAR MATERIAL</button>
+            </div>
+        </div>
+
+        <!-- ABA 3: HOSPITAIS -->
+        <div id="tab3" class="page">
+            <h2>Hospitais</h2>
+            <input id="h-nome" placeholder="Nome do Hospital">
+            <input id="h-pin" placeholder="Link do PIN/GPS (opcional)">
+            <button class="btn-blue" onclick="addHosp()">CADASTRAR HOSPITAL</button>
+            <div id="lista-hospitais" style="margin-top:20px;"></div>
+        </div>
+
+        <!-- ABA 4: FROTA (MÁQUINAS) -->
+        <div id="tab4" class="page">
+            <h2>Gestão da Frota</h2>
+            <p>Adicione as 18 máquinas aqui:</p>
+            <input id="m-id" type="number" placeholder="Número da Máquina">
+            <button class="btn-blue" onclick="addMaq()">ADICIONAR À FROTA</button>
+            <div id="lista-frota" style="margin-top:20px;"></div>
+        </div>
+
+        <!-- ABA 5: RELATÓRIO COMPLETO -->
+        <div id="tab5" class="page">
+            <h2>Relatório Geral</h2>
+            <div id="lista-relatorio" style="background:white; border-radius:15px; padding:10px;"></div>
+        </div>
+
+        <nav>
+            <button id="n1" onclick="setTab(1)" class="active">PAINEL</button>
+            <button id="n2" onclick="setTab(2)">GPS/MAT</button>
+            <button id="n3" onclick="setTab(3)">HOSP</button>
+            <button id="n4" onclick="setTab(4)">FROTA</button>
+            <button id="n5" onclick="setTab(5)">RELAT</button>
+        </nav>
+    </div>
+
+    <!-- MODAL DE EDIÇÃO -->
+    <div id="modal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <h3 id="modal-title">MÁQUINA</h3>
+            <div id="hosp-selector" style="display:flex; overflow-x:auto; gap:10px; margin-bottom:15px; padding:10px 0;"></div>
+            <button onclick="salvarStatus('verde','BASE')" class="btn-blue verde" style="color:white; margin-bottom:10px;">BASE (VERDE)</button>
+            <button onclick="salvarStatus('amarelo','RUA')" class="btn-blue amarelo" style="color:black; margin-bottom:10px;">RUA (AMARELO)</button>
+            <button onclick="salvarStatus('vermelho','RECOLHER')" class="btn-blue vermelho" style="color:white; margin-bottom:10px;">RECOLHER (VERMELHO)</button>
+            <button onclick="salvarStatus('azul','SAINDO')" class="btn-blue azul" style="color:white; margin-bottom:10px;">SAINDO (AZUL)</button>
+            <button onclick="salvarStatus('roxo','VOLTANDO')" class="btn-blue roxo" style="color:white; margin-bottom:10px;">VOLTANDO (ROXO)</button>
+            <button onclick="fecharModal()" style="margin-top:10px; border:none; background:none; color:#999; font-weight:bold; width:100%; padding:10px;">CANCELAR</button>
+        </div>
+    </div>
 
     <script>
-        var config = {
-            apiKey: "AIzaSyA896LR0DJv-TKqwt_DpkgO1MeaRKdKwP4",
-            databaseURL: "https://sosrim-592ab-default-rtdb.firebaseio.com",
-            projectId: "sosrim-592ab"
-        };
+        var config = { apiKey: "AIzaSyA896LR0DJv-TKqwt_DpkgO1MeaRKdKwP4", databaseURL: "https://sosrim-592ab-default-rtdb.firebaseio.com", projectId: "sosrim-592ab" };
+        firebase.initializeApp(config);
+        var db = firebase.database();
+        var user = localStorage.getItem('sos_user');
+        var selMaqId = null;
+        var hospitalSelecionado = "BASE";
 
-        var state = { user: localStorage.getItem('sos_user'), machines: {}, hospitals: {}, tab: 1, editingId: null };
+        if (!user) {
+            user = prompt("Quem é você? (Sergio, Aderildo ou Jairo)");
+            if (user) localStorage.setItem('sos_user', user);
+            else location.reload();
+        }
+        document.getElementById('user-display').innerText = user;
 
-        function render() {
-            var root = document.getElementById('app');
-            if (!state.user) {
-                root.innerHTML = '<div style="padding:40px; text-align:center;"><h1>SOSRIM</h1>' + ['Sergio', 'Aderildo', 'Jairo'].map(function(n){ return '<button onclick="login(\''+n+'\')" style="width:100%; padding:20px; margin-bottom:10px; border-radius:15px; border:none; background:#2563eb; color:white; font-weight:bold; font-size:20px;">'+n.toUpperCase()+'</button>'; }).join('') + '</div>';
-                return;
+        function setTab(n) {
+            for(var i=1; i<=5; i++) {
+                document.getElementById('tab'+i).classList.remove('active');
+                document.getElementById('n'+i).classList.remove('active');
             }
-
-            var html = '<header><span>SOSRIM 🚑</span><span onclick="logout()">' + state.user + ' 🚪</span></header>';
-            
-            // ABA 1: PAINEL (GRID)
-            if (state.tab === 1) {
-                html += '<div class="grid">';
-                var ids = Object.keys(state.machines).sort(function(a,b){return a-b;});
-                for (var i=0; i<ids.length; i++) {
-                    var m = state.machines[ids[i]];
-                    html += '<div class="card ' + m.status + '" onclick="openEdit(\'' + m.id + '\')"><span style="font-size:10px;">#' + m.id + '</span><div><span class="hosp">' + (m.hospital || 'BASE') + '</span><span class="time">' + (m.time || '--:--') + '</span></div></div>';
-                }
-                html += '</div>';
-            }
-
-            // ABA 3: HOSPITAIS
-            if (state.tab === 3) {
-                html += '<div style="padding:20px;"><h3>Cadastrar Hospital</h3><input id="hN" placeholder="Nome do Hospital"><button class="btn-add" onclick="addH()">SALVAR</button><hr>';
-                for (var id in state.hospitals) { html += '<div style="background:white; padding:10px; margin-bottom:5px; border-radius:10px;">' + state.hospitals[id].name + '</div>'; }
-                html += '</div>';
-            }
-
-            // ABA 4: FROTA (MÁQUINAS)
-            if (state.tab === 4) {
-                html += '<div style="padding:20px;"><h3>Cadastrar Máquina</h3><input id="mI" type="number" placeholder="Número da Máquina"><button class="btn-add" onclick="addM()">ADICIONAR À FROTA</button><hr><p>Máquinas na frota: ' + Object.keys(state.machines).length + '</p></div>';
-            }
-
-            html += '<nav><button onclick="setTab(1)" class="'+(state.tab===1?'active':'')+'">PAINEL</button><button onclick="setTab(3)" class="'+(state.tab===3?'active':'')+'">HOSP</button><button onclick="setTab(4)" class="'+(state.tab===4?'active':'')+'">FROTA</button></nav>';
-            
-            if (state.editingId) {
-                var m = state.machines[state.editingId];
-                html += '<div class="modal"><div class="modal-content"><h3>MÁQUINA #' + m.id + '</h3>';
-                var st = [['verde','Base'],['amarelo','Rua'],['vermelho','Recolher'],['azul','Saindo'],['roxo','Voltando']];
-                for(var i=0; i<st.length; i++) { html += '<button onclick="saveS(\''+st[i][0]+'\',\'BASE\')" class="btn-status '+st[i][0]+'">'+st[i][1]+'</button>'; }
-                html += '<button onclick="closeEdit()" style="margin-top:10px; border:none; background:none; color:#999;">FECHAR</button></div></div>';
-            }
-
-            root.innerHTML = html;
+            document.getElementById('tab'+n).classList.add('active');
+            document.getElementById('n'+n).classList.add('active');
         }
 
-        window.login = function(u){ state.user=u; localStorage.setItem('sos_user',u); render(); };
-        window.logout = function(){ localStorage.clear(); location.reload(); };
-        window.setTab = function(t){ state.tab=t; render(); };
-        window.openEdit = function(id){ state.editingId=id; render(); };
-        window.closeEdit = function(){ state.editingId=null; render(); };
+        // --- FUNÇÕES DE DADOS ---
+        function addMaq() {
+            var id = document.getElementById('m-id').value;
+            if(id) { db.ref('machines/'+id).set({id:id, status:'verde', hospital:'BASE', time:'00:00'}); document.getElementById('m-id').value=''; }
+        }
+        function addHosp() {
+            var n = document.getElementById('h-nome').value;
+            var p = document.getElementById('h-pin').value;
+            if(n) { db.ref('hospitals').push({name:n, pin:p}); document.getElementById('h-nome').value=''; document.getElementById('h-pin').value=''; }
+        }
+        function abrirModal(id) {
+            selMaqId = id;
+            document.getElementById('modal-title').innerText = "MÁQUINA #" + id;
+            document.getElementById('modal').style.display = 'flex';
+        }
+        function fecharModal() { document.getElementById('modal').style.display = 'none'; }
         
-        window.addH = function(){ var n=document.getElementById('hN').value; if(n){ firebase.database().ref('hospitals').push({name:n}); document.getElementById('hN').value=''; } };
-        window.addM = function(){ var id=document.getElementById('mI').value; if(id){ firebase.database().ref('machines/'+id).set({id:id, status:'verde', hospital:'BASE', time:'00:00'}); document.getElementById('mI').value=''; } };
-        window.saveS = function(s,h){ var t=new Date().toLocaleTimeString('pt-BR').slice(0,5); firebase.database().ref('machines/'+state.editingId).update({status:s, hospital:h, time:t}); state.editingId=null; };
-
-        if (typeof firebase !== 'undefined') {
-            firebase.initializeApp(config);
-            firebase.database().ref('machines').on('value', function(s){ state.machines=s.val()||{}; render(); });
-            firebase.database().ref('hospitals').on('value', function(s){ state.hospitals=s.val()||{}; render(); });
+        function salvarStatus(s, h) {
+            var time = new Date().toLocaleTimeString('pt-BR').slice(0,5);
+            db.ref('machines/'+selMaqId).update({status: s, hospital: hospitalSelecionado, time: time});
+            db.ref('history').push({
+                driver: user, 
+                timestamp: new Date().toLocaleString('pt-BR'),
+                details: "MÁQUINA #" + selMaqId + " alterada para " + s.toUpperCase() + " no hospital " + hospitalSelecionado
+            });
+            hospitalSelecionado = "BASE";
+            fecharModal();
         }
+
+        // --- SINCRONIZAÇÃO EM TEMPO REAL ---
+        db.ref('machines').on('value', function(snap) {
+            var data = snap.val() || {};
+            var grid = document.getElementById('grid-maquinas');
+            var lista = document.getElementById('lista-frota');
+            grid.innerHTML = ''; lista.innerHTML = '';
+            var ids = Object.keys(data).sort((a,b) => a-b);
+            ids.forEach(function(id) {
+                var m = data[id];
+                grid.innerHTML += '<div class="card '+m.status+'" onclick="abrirModal(\''+id+'\')"><span style="font-size:10px;">#'+id+'</span><span class="hosp-name">'+(m.hospital||'BASE')+'</span><span class="time">'+m.time+'</span></div>';
+                lista.innerHTML += '<div style="background:white; padding:10px; margin-bottom:5px; border-radius:10px; display:flex; justify-content:space-between;"><b>Máquina #'+id+'</b><span onclick="db.ref(\'machines/'+id+'\').remove()" style="color:red;">Excluir</span></div>';
+            });
+        });
+
+        db.ref('hospitals').on('value', function(snap) {
+            var data = snap.val() || {};
+            var lista = document.getElementById('lista-hospitais');
+            var seletor = document.getElementById('hosp-selector');
+            lista.innerHTML = ''; seletor.innerHTML = '<button onclick="hospitalSelecionado=\'BASE\'" style="padding:10px; border-radius:10px; border:1px solid #ccc;">BASE</button>';
+            for(var id in data) {
+                var h = data[id];
+                lista.innerHTML += '<div style="background:white; padding:10px; margin-bottom:5px; border-radius:10px; display:flex; justify-content:space-between;"><b>'+h.name+'</b><span onclick="db.ref(\'hospitals/'+id+'\').remove()" style="color:red;">Excluir</span></div>';
+                seletor.innerHTML += '<button onclick="hospitalSelecionado=\''+h.name+'\'; alert(\'Hospital selecionado: '+h.name+'\')" style="padding:10px; border-radius:10px; border:1px solid #ccc; white-space:nowrap;">'+h.name+'</button>';
+            }
+        });
+
+        db.ref('history').limitToLast(50).on('value', function(snap) {
+            var data = snap.val() || {};
+            var lista = document.getElementById('lista-relatorio');
+            lista.innerHTML = '';
+            var items = Object.values(data).reverse();
+            items.forEach(function(h) {
+                lista.innerHTML += '<div style="border-bottom:1px solid #eee; padding:10px 0;"><small style="color:gray;">'+h.timestamp+' | '+h.driver+'</small><br><b>'+h.details+'</b></div>';
+            });
+        });
     </script>
 </body>
 </html>
