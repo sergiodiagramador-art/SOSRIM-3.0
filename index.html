@@ -3,233 +3,237 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SOSRIM - V3.6 ORIGINAL</title>
-    <style>
-        /* LAYOUT ORIGINAL CINZA */
-        :root { --primary: #d32f2f; --secondary: #333; --bg: #e0e0e0; }
-        body { font-family: Arial, sans-serif; margin: 0; background: var(--bg); padding-bottom: 70px; color: #333; }
-        
-        .header { background: #333; color: white; padding: 12px; text-align: center; font-weight: bold; font-size: 18px; }
-        
-        .nav { position: fixed; bottom: 0; left: 0; right: 0; background: #333; display: flex; height: 60px; z-index: 1000; }
-        .nav-btn { flex: 1; background: none; border: none; color: #bbb; font-size: 11px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
-        .nav-btn.active { color: white; border-top: 4px solid var(--primary); }
+    <title>SOSRIM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, onValue, set, push, update, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        .tab-content { display: none; padding: 10px; }
-        .tab-content.active { display: block; }
-
-        /* GRID MONITOR - LAYOUT SOLICITADO */
-        .m-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-        .m-card { background: white; border-radius: 4px; padding: 8px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.2); cursor: pointer; border-bottom: 4px solid #ccc; position: relative; min-height: 80px; display: flex; flex-direction: column; justify-content: space-between; }
-        
-        /* CORES ORIGINAIS */
-        .m-card.verde { border-bottom-color: #4caf50; }
-        .m-card.roxo { border-bottom-color: #9c27b0; }
-        .m-card.azul { border-bottom-color: #2196f3; }
-        .m-card.amarelo { border-bottom-color: #ffeb3b; }
-        .m-card.vermelho { border-bottom-color: #f44336; }
-
-        .m-num-top { font-size: 12px; font-weight: bold; color: #888; position: absolute; top: 5px; right: 8px; }
-        .m-hosp-main { font-size: 13px; font-weight: bold; color: #000; margin-top: 15px; line-height: 1.2; height: 32px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
-        .m-time-lib { font-size: 14px; font-weight: bold; color: var(--primary); margin-top: 5px; }
-
-        /* COMPONENTES */
-        .btn { padding: 12px; border-radius: 4px; border: none; font-weight: bold; cursor: pointer; background: var(--primary); color: white; width: 100%; margin-bottom: 10px; font-size: 14px; }
-        .list-item { background: white; padding: 10px; margin-bottom: 5px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid var(--primary); }
-        
-        input, select { width: 100%; padding: 12px; margin: 5px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 16px; }
-
-        #edit-modal, #login-screen { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 2000; padding: 20px; }
-        .modal-content { background: #fff; padding: 20px; border-radius: 4px; width: 100%; max-width: 350px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
-    </style>
-</head>
-<body>
-    <div id="login-screen" style="display:flex; background:#333;">
-        <div class="modal-content" style="text-align:center;">
-            <h2 style="margin-top:0">ACESSO SOSRIM</h2>
-            <button class="btn" onclick="login('SERGIO')">SERGIO</button>
-            <button class="btn" onclick="login('ADERILDO')">ADERILDO</button>
-            <button class="btn" onclick="login('JAIRO')">JAIRO</button>
-        </div>
-    </div>
-
-    <div class="header">SOSRIM - <span id="header-user"></span></div>
-
-    <div id="tab1" class="tab-content active">
-        <div class="m-grid" id="monitor-grid"></div>
-    </div>
-
-    <div id="tab2" class="tab-content">
-        <h3>ROTA INTELIGENTE</h3>
-        <button class="btn" style="background:#4caf50;" onclick="openGoogleMaps()">📍 GOOGLE MAPS (ROTA)</button>
-        <button class="btn" style="background:#3366ff;" onclick="openWaze()">🚙 WAZE (PRÓXIMO)</button>
-        <div id="route-list" style="margin-top:15px;"></div>
-    </div>
-
-    <div id="tab3" class="tab-content">
-        <h3>HOSPITAIS</h3>
-        <div style="display:flex; gap:5px;">
-            <input type="text" id="new-hosp" placeholder="Novo Hospital">
-            <button onclick="addHosp()" style="background:#4caf50; color:white; border:none; padding:10px; border-radius:4px; font-weight:bold;">+</button>
-        </div>
-        <div id="hosp-list" style="margin-top:15px;"></div>
-    </div>
-
-    <div id="tab4" class="tab-content">
-        <h3>MÁQUINAS</h3>
-        <div style="display:flex; gap:5px;">
-            <input type="number" id="new-mach" placeholder="Nº Máquina">
-            <button onclick="addMach()" style="background:#4caf50; color:white; border:none; padding:10px; border-radius:4px; font-weight:bold;">+</button>
-        </div>
-        <div id="mach-list" style="margin-top:15px;"></div>
-    </div>
-
-    <div id="tab5" class="tab-content">
-        <h3>FIM DO DIA</h3>
-        <div id="report-view" style="background:white; padding:15px; border-radius:4px; font-family:monospace; white-space:pre-wrap; font-size:13px; border:1px solid #ccc; margin-bottom:10px;"></div>
-        <button class="btn" style="background:#4caf50;" onclick="copyReport()">COPIAR WHATSAPP</button>
-        <button class="btn" style="background:#666;" onclick="generateReport()">ATUALIZAR</button>
-    </div>
-
-    <nav class="nav">
-        <button class="nav-btn active" onclick="showTab(1, this)">Monitor</button>
-        <button class="nav-btn" onclick="showTab(2, this)">GPS/Rota</button>
-        <button class="nav-btn" onclick="showTab(3, this)">Hospitais</button>
-        <button class="nav-btn" onclick="showTab(4, this)">Frota</button>
-        <button class="nav-btn" onclick="showTab(5, this)">Relat.</button>
-    </nav>
-
-    <div id="edit-modal">
-        <div class="modal-content">
-            <h3 id="modal-title" style="margin-top:0">Máquina</h3>
-            <label>Hospital:</label>
-            <select id="modal-hosp"></select>
-            <label>Status:</label>
-            <select id="modal-status">
-                <option value="verde">BASE (Verde)</option>
-                <option value="roxo">TRÂNSITO (Roxo)</option>
-                <option value="amarelo">ENTREGUE (Amarelo)</option>
-                <option value="vermelho">LIBERADA (Vermelho)</option>
-                <option value="azul">RETORNO (Azul)</option>
-            </select>
-            <label>Liberação Técnico:</label><input type="time" id="modal-lib">
-            <label>Entrega Hospital:</label><input type="time" id="modal-ent">
-            <div style="display:flex; gap:10px; margin-top:15px;">
-                <button class="btn" onclick="saveModal()" style="flex:2;">SALVAR</button>
-                <button class="btn" onclick="document.getElementById('edit-modal').style.display='none'" style="flex:1; background:#666;">X</button>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        const DEFAULT_HOSPITALS = ["Erasto Gaertner", "Erastinho", "Marcelino Champagnat", "Nações", "Oswaldo Cruz", "Fraturas XV", "Pilar", "Graças", "Nossa Saúde", "Inc Campo Comprido", "Maternidade Trabalhador", "Marillac", "Yoshimi"];
-        
-        let state = JSON.parse(localStorage.getItem('sosrim_v36')) || {
-            user: null,
-            machines: Array.from({length: 18}, (_, i) => ({ id: i + 1, status: 'verde', hospital: 'BASE', liberacao: '', entrega: '' })),
-            hospitals: DEFAULT_HOSPITALS
+        // SUA CONFIGURAÇÃO DO FIREBASE (sosrim-592ab)
+        const firebaseConfig = {
+            apiKey: "AIzaSyB_REPLACE_WITH_REAL_KEY",
+            authDomain: "sosrim-592ab.firebaseapp.com",
+            databaseURL: "https://sosrim-592ab-default-rtdb.firebaseio.com",
+            projectId: "sosrim-592ab",
+            storageBucket: "sosrim-592ab.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "1:123456789:web:abcdef"
         };
 
-        let currentId = null;
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
 
-        function login(u) {
-            state.user = u;
-            document.getElementById('login-screen').style.display = 'none';
-            document.getElementById('header-user').innerText = u;
-            save(); render();
-        }
+        window.state = {
+            user: localStorage.getItem('sosrim_user') || null,
+            machines: {},
+            hospitals: {},
+            history: [],
+            currentTab: 1,
+            currentLocationName: 'Rua Buenos Aires, 792',
+            showGpsPrompt: false,
+            quickStatusId: null,
+            tempStatus: null,
+            tempHosp: null,
+            tempTime: null
+        };
 
-        function showTab(n, btn) {
-            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById('tab' + n).classList.add('active');
-            btn.classList.add('active');
+        const render = () => {
+            const appDiv = document.getElementById('app');
+            if (!window.state.user) { renderLogin(appDiv); return; }
+            renderMain(appDiv);
+            if (window.lucide) lucide.createIcons();
+        };
+
+        const renderLogin = (container) => {
+            container.innerHTML = `
+                <div class="min-h-screen flex items-center justify-center bg-gray-50 p-6 font-sans">
+                    <div class="bg-white p-8 rounded-[40px] shadow-2xl w-full max-w-md text-center border-t-8 border-blue-600">
+                        <div class="text-7xl mb-6">🚑</div>
+                        <h1 class="text-4xl font-black text-blue-900 mb-2 tracking-tighter uppercase">SOSRIM</h1>
+                        <p class="text-gray-400 mb-10 font-medium">Controle de Logística</p>
+                        <div class="space-y-4">
+                            ${['Sergio', 'Aderildo', 'Jairo'].map(name => `
+                                <button onclick="login('${name}')" class="w-full py-5 bg-blue-600 text-white rounded-2xl font-black text-xl shadow-lg shadow-blue-100 active:scale-95 transition-all uppercase tracking-widest">
+                                    ${name}
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        };
+
+        window.login = (name) => { window.state.user = name; localStorage.setItem('sosrim_user', name); render(); };
+        window.logout = () => { localStorage.removeItem('sosrim_user'); window.state.user = null; render(); };
+        window.setTab = (t) => { window.state.currentTab = t; render(); };
+
+        const renderMain = (container) => {
+            container.innerHTML = `
+                <div class="min-h-screen bg-gray-50 pb-28 font-sans">
+                    <header class="bg-white p-5 shadow-sm flex justify-between items-center sticky top-0 z-40">
+                        <div class="flex items-center gap-2">
+                            <span class="text-2xl">🚑</span>
+                            <h1 class="font-black text-2xl text-blue-900 tracking-tighter">SOSRIM</h1>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="bg-blue-600 text-white px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-md shadow-blue-100">${window.state.user}</span>
+                            <button onclick="logout()" class="text-gray-300"><i data-lucide="log-out" class="w-5 h-5"></i></button>
+                        </div>
+                    </header>
+                    <main class="p-4">${renderTabContent()}</main>
+                    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 flex justify-around p-3 pb-8 shadow-[0_-10px_30px_rgba(0,0,0,0.05)] z-40">
+                        ${[1, 2, 3, 4, 5].map(t => `
+                            <button onclick="setTab(\({t})" class="flex flex-col items-center p-2 transition-all \){window.state.currentTab === t ? 'text-blue-600 scale-110' : 'text-gray-300'}">
+                                <i data-lucide="\({['grid', 'map', 'hospital', 'list', 'history'][t-1]}" class="\){window.state.currentTab === t ? 'w-7 h-7' : 'w-6 h-6'}"></i>
+                            </button>
+                        `).join('')}
+                    </nav>
+                </div>
+            `;
+        };
+
+        const renderTabContent = () => {
+            switch(window.state.currentTab) {
+                case 1: return renderTab1();
+                case 2: return renderTab2();
+                case 3: return renderTab3();
+                case 4: return renderTab4();
+                case 5: return renderTab5();
+                default: return renderTab1();
+            }
+        };
+
+        const getStatusClass = (status) => {
+            switch(status) {
+                case 'verde': return 'bg-green-500 text-white';
+                case 'amarelo': return 'bg-yellow-400 text-black';
+                case 'vermelho': return 'bg-red-500 text-white';
+                case 'azul': return 'bg-blue-500 text-white';
+                case 'roxo': return 'bg-purple-500 text-white';
+                default: return 'bg-white text-gray-300';
+            }
+        };
+
+        const renderTab1 = () => {
+            const machines = Object.values(window.state.machines).sort((a,b) => a.id - b.id);
+            return `
+                <div class="grid grid-cols-3 gap-3">
+                    ${machines.map(m => `
+                        <div onclick="openQuickStatus('\({m.id}')" class="aspect-square rounded-2xl p-3 flex flex-col justify-between shadow-md relative overflow-hidden transition-all active:scale-95 border-2 \){m.status === 'vermelho' ? 'border-red-500' : 'border-transparent'} ${getStatusClass(m.status)}">
+                            <div class="text-[10px] font-black opacity-60">#${m.id}</div>
+                            <div class="flex flex-col items-center justify-center flex-1 text-center">
+                                <span class="text-[9px] font-bold truncate w-full opacity-90 mb-1 uppercase leading-tight">${m.hospital || 'BASE'}</span>
+                                <span class="text-2xl font-black leading-none tracking-tighter">${m.time || '--:--'}</span>
+                            </div>
+                            ${m.status === 'vermelho' ? '<div class="absolute inset-0 bg-red-600 animate-pulse opacity-20 pointer-events-none"></div>' : ''}
+                        </div>
+                    `).join('')}
+                </div>
+                ${window.state.quickStatusId ? renderQuickStatusSelector() : ''}
+                ${window.state.showGpsPrompt ? renderGpsPrompt() : ''}
+            `;
+        };
+
+        window.openQuickStatus = (id) => {
+            const m = window.state.machines[id];
+            if (!m) return;
+            window.state.quickStatusId = id;
+            window.state.tempStatus = m.status;
+            window.state.tempHosp = m.hospital;
+            window.state.tempTime = m.time;
             render();
-        }
+        };
 
-        function save() { localStorage.setItem('sosrim_v36', JSON.stringify(state)); }
+        window.closeQuickStatus = () => { window.state.quickStatusId = null; render(); };
+        window.selectStatus = (s) => { window.state.tempStatus = s; render(); };
+        window.selectHosp = (h) => { window.state.tempHosp = h; render(); };
 
-        function render() {
-            // Monitor - Requisito: Numero pequeno em cima, Hospital Maior, Horário Liberação
-            document.getElementById('monitor-grid').innerHTML = state.machines.sort((a,b)=>a.id-b.id).map(m => `
-                <div class="m-card ${m.status}" onclick="openEdit(${m.id})">
-                    <span class="m-num-top">${m.id < 10 ? '0'+m.id : m.id}</span>
-                    <div class="m-hosp-main">${m.hospital}</div>
-                    <div class="m-time-lib">${m.liberacao || '--:--'}</div>
+        window.confirmUpdate = (id) => {
+            const timeVal = document.getElementById('tempTime').value || '00:00';
+            update(ref(db, `machines/${id}`), { status: window.state.tempStatus, hospital: window.state.tempHosp, time: timeVal });
+            push(ref(db, 'history'), { driver: window.state.user, timestamp: new Date().toLocaleTimeString('pt-BR'), action: "MÁQUINA", details: `MAQ#\({id} em \){window.state.tempHosp} (${window.state.tempStatus.toUpperCase()})` });
+            window.state.quickStatusId = null;
+            render();
+        };
+
+        const renderQuickStatusSelector = () => {
+            const m = window.state.machines[window.state.quickStatusId];
+            const statusOptions = [{id:'verde',label:'Base',color:'bg-green-500'},{id:'amarelo',label:'Rua',color:'bg-yellow-400'},{id:'vermelho',label:'Recolher',color:'bg-red-500'},{id:'azul',label:'Saindo',color:'bg-blue-500'},{id:'roxo',label:'Voltando',color:'bg-purple-500'}];
+            const hospitals = ['Erasto Gaertner', 'Erastinho', 'Marcelino Champagnat', 'Nações', 'Oswaldo Cruz', 'Fraturas XV', 'Pilar', 'Graças', 'Nossa Saúde', 'INC Campo Comprido', 'Maternidade Trabalhador', 'Marillac', 'Papa Francisco', 'Yoshimi', 'Alberto', 'BASE'];
+
+            return `
+                <div class="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-end">
+                    <div class="bg-white w-full p-6 rounded-t-[40px] animate-slide-up max-h-[90vh] overflow-y-auto pb-12 text-center">
+                        <div class="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6"></div>
+                        <h3 class="text-2xl font-black text-blue-900 mb-6 italic underline tracking-tighter uppercase">Máquina #${m.id}</h3>
+                        <div class="grid grid-cols-2 gap-2 mb-6">
+                            ${statusOptions.map(opt => `
+                                <button onclick="selectStatus('\({opt.id}')" class="flex items-center gap-2 p-3 rounded-2xl border-2 \){window.state.tempStatus === opt.id ? 'border-blue-600 bg-blue-50' : 'border-gray-50'}">
+                                    <div class="w-4 h-4 rounded-full ${opt.color}"></div>
+                                    <span class="font-black text-[10px] uppercase">${opt.label}</span>
+                                </button>
+                            `).join('')}
+                        </div>
+                        <div class="mb-6">
+                            <div class="grid grid-cols-2 gap-1 max-h-40 overflow-y-auto bg-gray-50 p-2 rounded-2xl">
+                                \({hospitals.map(h => `<button onclick="selectHosp('\){h}')" class="p-3 rounded-xl font-black text-[10px] border \({window.state.tempHosp === h ? 'bg-blue-600 text-white' : 'bg-white text-gray-500'}">\){h}</button>`).join('')}
+                            </div>
+                        </div>
+                        <input id="tempTime" type="time" value="${window.state.tempTime || '00:00'}" class="w-full bg-gray-50 p-4 rounded-2xl font-black text-3xl text-center mb-6 border-none text-blue-900">
+                        <div class="flex gap-4">
+                            <button onclick="closeQuickStatus()" class="flex-1 font-bold text-gray-400">Voltar</button>
+                            <button onclick="confirmUpdate('${m.id}')" class="flex-[2] bg-blue-600 text-white p-5 rounded-3xl font-black shadow-lg">CONFIRMAR OK</button>
+                        </div>
+                    </div>
                 </div>
-            `).join('');
+            `;
+        };
 
-            // Rota (Tab 2 conforme anterior)
-            const ready = state.machines.filter(m => m.status === 'vermelho');
-            document.getElementById('route-list').innerHTML = ready.length ? ready.map(m => `
-                <div class="list-item" onclick="openTargetGPS('${m.hospital}')">
-                    <span><strong>M${m.id}</strong> - ${m.hospital}</span>
-                    <span style="font-size:10px; color:var(--primary)">IR AGORA</span>
+        const renderGpsPrompt = () => `
+            <div class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
+                <div class="bg-white w-full rounded-[40px] p-10 shadow-2xl text-center">
+                    <div class="text-6xl mb-6">📍</div>
+                    <h3 class="text-2xl font-black text-blue-900 mb-2">Você está no Hospital?</h3>
+                    <p class="text-gray-400 mb-10">O que deseja registrar agora?</p>
+                    <div class="grid grid-cols-1 gap-3">
+                        <button onclick="window.state.showGpsPrompt=false;render()" class="bg-blue-600 text-white p-5 rounded-3xl font-black">ENTREGAR MÁQUINAS</button>
+                        <button onclick="window.state.showGpsPrompt=false;render()" class="bg-red-500 text-white p-5 rounded-3xl font-black">RECOLHER MÁQUINAS</button>
+                        <button onclick="window.state.showGpsPrompt=false;render()" class="mt-4 text-gray-300 font-bold uppercase text-xs">Ignorar</button>
+                    </div>
                 </div>
-            `).join('') : '<p style="text-align:center; color:#888;">Nenhuma coleta pendente.</p>';
+            </div>
+        `;
 
-            // Listas
-            document.getElementById('hosp-list').innerHTML = state.hospitals.map(h => `
-                <div class="list-item"><span>${h}</span><button onclick="delHosp('${h}')" style="background:none; border:none; color:red; font-weight:bold;">X</button></div>
-            `).join('');
+        const renderTab5 = () => {
+            const hist = window.state.history || [];
+            return `
+                <div class="p-6 bg-white min-h-screen" style="font-family: Arial, sans-serif;">
+                    <h2 class="text-3xl font-black border-b-8 border-black pb-4 mb-10 text-blue-900 uppercase">RELATÓRIO</h2>
+                    <div class="space-y-8">
+                        ${hist.slice().reverse().map(l => `
+                            <div class="border-b-2 border-gray-50 pb-6">
+                                <div class="flex justify-between text-[10px] font-black text-gray-400 mb-2 uppercase"><span>\({l.driver}</span><span>\){l.timestamp}</span></div>
+                                <p class="text-[18px] font-bold text-gray-900 uppercase"><span class="text-blue-600">\({l.action}:</span> \){l.details}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        };
 
-            document.getElementById('mach-list').innerHTML = state.machines.sort((a,b)=>a.id-b.id).map(m => `
-                <div class="list-item"><span>MÁQUINA ${m.id}</span><button onclick="delMach(${m.id})" style="background:none; border:none; color:red; font-weight:bold;">X</button></div>
-            `).join('');
-            
-            generateReport();
-        }
+        const renderTab2 = () => `<div class="p-20 text-center font-black text-gray-300 uppercase tracking-widest italic">Mapa em breve</div>`;
+        const renderTab3 = () => `<div class="p-20 text-center font-black text-gray-300 uppercase tracking-widest italic">Hospitais (Cadastrados no sistema)</div>`;
+        const renderTab4 = () => `<div class="p-20 text-center font-black text-gray-300 uppercase tracking-widest italic">Máquinas (Configuração total)</div>`;
 
-        function openEdit(id) {
-            currentId = id;
-            const m = state.machines.find(x => x.id === id);
-            document.getElementById('modal-title').innerText = `MÁQUINA ${id}`;
-            document.getElementById('modal-status').value = m.status;
-            document.getElementById('modal-lib').value = m.liberacao;
-            document.getElementById('modal-ent').value = m.entrega;
-            const sel = document.getElementById('modal-hosp');
-            sel.innerHTML = '<option value="BASE">🏠 BASE</option>' + state.hospitals.map(h => `<option value="${h}" ${m.hospital==h?'selected':''}>${h}</option>`).join('');
-            document.getElementById('edit-modal').style.display = 'flex';
-        }
-
-        function saveModal() {
-            const m = state.machines.find(x => x.id === currentId);
-            m.status = document.getElementById('modal-status').value;
-            m.liberacao = document.getElementById('modal-lib').value;
-            m.entrega = document.getElementById('modal-ent').value;
-            m.hospital = document.getElementById('modal-hosp').value;
-            document.getElementById('edit-modal').style.display = 'none';
-            save(); render();
-        }
-
-        function addHosp() { const n = document.getElementById('new-hosp').value; if(n){state.hospitals.push(n); state.hospitals.sort(); document.getElementById('new-hosp').value=''; save(); render();}}
-        function delHosp(n) { if(confirm('Excluir '+n+'?')){state.hospitals = state.hospitals.filter(h=>h!==n); save(); render();}}
-        function addMach() { const n = parseInt(document.getElementById('new-mach').value); if(n && !state.machines.find(m=>m.id===n)){state.machines.push({id:n, status:'verde', hospital:'BASE', liberacao:'', entrega:''}); document.getElementById('new-mach').value=''; save(); render();}}
-        function delMach(id) { if(confirm('Excluir Máquina '+id+'?')){state.machines = state.machines.filter(m=>m.id!==id); save(); render();}}
-
-        function generateReport() {
-            let r = `📋 RELATÓRIO SOSRIM - ${new Date().toLocaleDateString('pt-BR')}\n👤 Motorista: ${state.user}\n\n`;
-            state.machines.filter(m => m.hospital !== 'BASE' || m.liberacao).forEach(m => {
-                r += `M${m.id}: ${m.hospital} | Lib: ${m.liberacao || '--'} | Ent: ${m.entrega || '--'}\n`;
-            });
-            document.getElementById('report-view').innerText = r;
-        }
-
-        function copyReport() { navigator.clipboard.writeText(document.getElementById('report-view').innerText).then(()=>alert("Copiado!")); }
-        
-        function openTargetGPS(hosp) { window.open(`https://www.google.com/maps/search/${encodeURIComponent(hosp + " Curitiba")}`, '_blank'); }
-        function openGoogleMaps() {
-            const dests = [...new Set(state.machines.filter(m => m.status === 'vermelho').map(m => m.hospital + " Curitiba"))];
-            if(!dests.length) return alert("Nada para coletar.");
-            window.open(`https://www.google.com/maps/dir/Current+Location/${dests.join('/')}`, '_blank');
-        }
-        function openWaze() {
-            const first = state.machines.find(m => m.status === 'vermelho')?.hospital;
-            if(!first) return alert("Nada para coletar.");
-            window.open(`https://waze.com/ul?q=${encodeURIComponent(first + " Curitiba")}&navigate=yes`, '_blank');
-        }
-
-        if(state.user) login(state.user);
+        onValue(ref(db, 'machines'), (snap) => { window.state.machines = snap.val() || {}; render(); });
+        onValue(ref(db, 'history'), (snap) => { window.state.history = Object.values(snap.val() || {}); render(); });
+        window.onload = render;
     </script>
-</body>
+    <style>
+        @keyframes slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .animate-slide-up { animation: slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+    </style>
+</head>
+<body class="overscroll-none overflow-hidden"><div id="app"></div></body>
 </html>
