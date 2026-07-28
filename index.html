@@ -4,12 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SOSRIM</title>
+    <!-- LINK QUE FUNCIONOU NO TESTE ANTERIOR -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/8.10.0/firebase.js"></script>
     <style>
         body { margin: 0; font-family: sans-serif; background: #f1f5f9; color: #1e3a8a; }
         header { background: #fff; padding: 15px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; }
         
-        /* GRID DE 3 COLUNAS - IGUAL AO QUE FUNCIONOU */
         .grid { display: block; padding: 8px; overflow: hidden; }
         .card { 
             width: 30%; 
@@ -28,7 +28,6 @@
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
         
-        /* CORES DOS STATUS */
         .verde { background: #22c55e; } 
         .amarelo { background: #facc15; color: black; } 
         .vermelho { background: #ef4444; }
@@ -41,15 +40,14 @@
         nav { position: fixed; bottom: 0; width: 100%; background: #fff; display: flex; padding: 15px 0 35px 0; border-top: 1px solid #ddd; }
         nav button { flex: 1; border: none; background: none; font-weight: bold; color: #64748b; font-size: 11px; text-transform: uppercase; }
         
-        /* MODAL DE EDIÇÃO */
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
         .modal-content { background: white; width: 100%; border-radius: 20px; padding: 20px; text-align: center; }
-        .btn-status { width: 100%; padding: 15px; margin: 5px 0; border-radius: 10px; border: none; font-weight: bold; color: white; }
+        .btn-status { width: 100%; padding: 15px; margin: 5px 0; border-radius: 10px; border: none; font-weight: bold; color: white; text-transform: uppercase; }
     </style>
 </head>
 <body>
     <div id="app">
-        <div style="padding: 50px; text-align: center;"><h1>SOSRIM</h1><p>Conectando...</p></div>
+        <div style="padding: 50px; text-align: center;"><h1>SOSRIM</h1><p>Iniciando...</p></div>
     </div>
 
     <script>
@@ -68,21 +66,22 @@
 
         function render() {
             var root = document.getElementById('app');
+            
+            // TELA DE LOGIN
             if (!state.user) {
-                root.innerHTML = '<div style="padding:40px; text-align:center;">' +
-                    '<h1 style="color:#2563eb; font-size:40px; margin:0;">SOSRIM</h1>' +
-                    '<p>Selecione seu nome:</p>' +
-                    ['Sergio', 'Aderildo', 'Jairo'].map(function(n) {
-                        return '<button onclick="login(\''+n+'\')" style="width:100%; padding:20px; margin-bottom:10px; border-radius:15px; border:none; background:#2563eb; color:white; font-weight:bold; font-size:20px;">'+n+'</button>';
-                    }).join('') +
-                '</div>';
+                var nomes = ['Sergio', 'Aderildo', 'Jairo'];
+                var botoes = '';
+                for (var i=0; i<nomes.length; i++) {
+                    botoes += '<button onclick="login(\''+nomes[i]+'\')" style="width:100%; padding:20px; margin-bottom:10px; border-radius:15px; border:none; background:#2563eb; color:white; font-weight:bold; font-size:20px;">'+nomes[i].toUpperCase()+'</button>';
+                }
+                root.innerHTML = '<div style="padding:40px; text-align:center;"><h1 style="color:#2563eb; font-size:40px; margin:0;">SOSRIM</h1><p>QUEM ESTÁ DIRIGINDO?</p>' + botoes + '</div>';
                 return;
             }
 
+            // PAINEL DE MÁQUINAS
             var html = '<header><span>SOSRIM 🚑</span><span onclick="logout()">' + state.user + ' 🚪</span></header>';
             html += '<div class="grid">';
             
-            // Renderiza as máquinas
             for (var id in state.machines) {
                 var m = state.machines[id];
                 html += '<div class="card ' + m.status + '" onclick="openEdit(\'' + id + '\')">' +
@@ -95,23 +94,24 @@
             html += '</div>';
             html += '<nav><button onclick="setTab(1)">PAINEL</button><button onclick="setTab(5)">RELATÓRIO</button></nav>';
             
-            // Modal de Edição
+            // JANELA DE MUDANÇA DE STATUS (MODAL)
             if (state.editingId) {
                 var m = state.machines[state.editingId];
                 html += '<div class="modal"><div class="modal-content">' +
-                    '<h3>MAQUINA #' + m.id + '</h3>' +
+                    '<h3 style="margin-top:0;">MÁQUINA #' + m.id + '</h3>' +
                     '<button onclick="save(\'verde\',\'BASE\')" class="btn-status verde">BASE (VERDE)</button>' +
                     '<button onclick="save(\'amarelo\',\'RUA\')" class="btn-status amarelo">RUA (AMARELO)</button>' +
                     '<button onclick="save(\'vermelho\',\'RECOLHER\')" class="btn-status vermelho">RECOLHER (VERMELHO)</button>' +
                     '<button onclick="save(\'azul\',\'SAINDO\')" class="btn-status azul">SAINDO (AZUL)</button>' +
                     '<button onclick="save(\'roxo\',\'VOLTANDO\')" class="btn-status roxo">VOLTANDO (ROXO)</button>' +
-                    '<button onclick="closeEdit()" style="margin-top:15px; background:none; border:none; color:#999;">CANCELAR</button>' +
+                    '<button onclick="closeEdit()" style="margin-top:15px; background:none; border:none; color:#999; font-weight:bold;">CANCELAR</button>' +
                 '</div></div>';
             }
 
             root.innerHTML = html;
         }
 
+        // COMANDOS DO SISTEMA
         window.login = function(u) { state.user = u; localStorage.setItem('sos_user', u); render(); };
         window.logout = function() { localStorage.clear(); location.reload(); };
         window.setTab = function(t) { state.tab = t; render(); };
@@ -123,12 +123,15 @@
             state.editingId = null;
         };
 
+        // LIGAÇÃO COM O BANCO DE DADOS
         if (typeof firebase !== 'undefined') {
             firebase.initializeApp(config);
             firebase.database().ref('machines').on('value', function(snap) {
                 state.machines = snap.val() || {};
                 render();
             });
+        } else {
+            document.getElementById('app').innerHTML = '<div style="padding:50px; text-align:center;"><h1>Erro de Rede</h1><p>O Google está bloqueado no seu celular.</p></div>';
         }
     </script>
 </body>
