@@ -2,175 +2,113 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SOSRIM</title>
-    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-50 font-sans overscroll-none">
-    <div id="app"></div>
+<body style="margin:0; font-family: sans-serif; background: #f3f4f6;">
+    <div id="app">
+        <div style="padding: 50px; text-align: center;">
+            <h1 style="color: #1e3a8a;">SOSRIM</h1>
+            <p>Carregando sistema...</p>
+        </div>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, onValue, set, push, update, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, onValue, set, push, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
+        // CONFIGURAÇÃO REAL DO SEU FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyB_REPLACE_WITH_REAL_KEY",
             authDomain: "sosrim-592ab.firebaseapp.com",
             databaseURL: "https://sosrim-592ab-default-rtdb.firebaseio.com",
-            projectId: "sosrim-592ab",
-            storageBucket: "sosrim-592ab.appspot.com",
-            messagingSenderId: "123456789",
-            appId: "1:123456789:web:abcdef"
+            projectId: "sosrim-592ab"
         };
 
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
+        try {
+            const app = initializeApp(firebaseConfig);
+            const db = getDatabase(app);
 
-        window.state = {
-            user: localStorage.getItem('sosrim_user') || null,
-            machines: {},
-            history: [],
-            currentTab: 1,
-            quickStatusId: null,
-            tempStatus: null,
-            tempHosp: null,
-            tempTime: null
-        };
+            let state = {
+                user: localStorage.getItem('sosrim_user') || null,
+                machines: {},
+                history: [],
+                tab: 1
+            };
 
-        function render() {
-            const appDiv = document.getElementById('app');
-            if (!appDiv) return;
-
-            if (!window.state.user) {
-                appDiv.innerHTML = `
-                    <div class="min-h-screen flex items-center justify-center p-6 text-center">
-                        <div class="bg-white p-10 rounded-[40px] shadow-2xl w-full max-w-md border-t-8 border-blue-600">
-                            <h1 class="text-4xl font-black text-blue-900 mb-2 uppercase">SOSRIM</h1>
-                            <p class="text-gray-400 mb-10 font-medium italic">Selecione seu nome</p>
-                            <div class="space-y-4">
-                                ${['Sergio', 'Aderildo', 'Jairo'].map(name => `
-                                    <button onclick="window.login('${name}')" class="w-full py-6 bg-blue-600 text-white rounded-3xl font-black text-2xl shadow-lg uppercase active:scale-95 transition-all">
-                                        ${name}
-                                    </button>
-                                `).join('')}
+            function render() {
+                const root = document.getElementById('app');
+                
+                // TELA DE LOGIN
+                if (!state.user) {
+                    root.innerHTML = `
+                        <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px;">
+                            <div style="background: white; padding: 40px; border-radius: 30px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; border-top: 10px solid #2563eb;">
+                                <h1 style="margin: 0; font-size: 40px; color: #1e3a8a;">SOSRIM</h1>
+                                <p style="color: #9ca3af; margin-bottom: 30px;">Selecione seu nome</p>
+                                <button onclick="window.doLogin('Sergio')" style="width: 100%; padding: 20px; background: #2563eb; color: white; border: none; border-radius: 15px; font-size: 20px; font-weight: bold; margin-bottom: 10px; cursor: pointer;">SERGIO</button>
+                                <button onclick="window.doLogin('Aderildo')" style="width: 100%; padding: 20px; background: #2563eb; color: white; border: none; border-radius: 15px; font-size: 20px; font-weight: bold; margin-bottom: 10px; cursor: pointer;">ADERILDO</button>
+                                <button onclick="window.doLogin('Jairo')" style="width: 100%; padding: 20px; background: #2563eb; color: white; border: none; border-radius: 15px; font-size: 20px; font-weight: bold; cursor: pointer;">JAIRO</button>
                             </div>
                         </div>
-                    </div>
-                `;
-                return;
-            }
+                    `;
+                    return;
+                }
 
-            const machines = Object.values(window.state.machines).sort((a,b) => a.id - b.id);
-
-            appDiv.innerHTML = `
-                <div class="min-h-screen pb-32">
-                    <header class="bg-white p-5 shadow-sm flex justify-between items-center sticky top-0 z-40">
-                        <div class="flex items-center gap-2">
-                            <h1 class="font-black text-2xl text-blue-900 tracking-tighter">SOSRIM 🚑</h1>
+                // TELA PRINCIPAL
+                const machines = Object.values(state.machines).sort((a,b) => a.id - b.id);
+                
+                root.innerHTML = `
+                    <div style="min-height: 100vh; padding-bottom: 100px;">
+                        <div style="background: white; padding: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                            <b style="color: #1e3a8a; font-size: 24px;">SOSRIM 🚑</b>
+                            <span style="background: #2563eb; color: white; padding: 5px 15px; border-radius: 20px; font-size: 12px; font-weight: bold;">${state.user.toUpperCase()}</span>
                         </div>
-                        <div class="flex items-center gap-3">
-                            <span class="bg-blue-600 text-white px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">${window.state.user}</span>
-                            <button onclick="window.logout()" class="text-gray-300 font-bold text-xs uppercase">Sair</button>
-                        </div>
-                    </header>
 
-                    <main class="p-4">
-                        ${window.state.currentTab === 1 ? `
-                            <div class="grid grid-cols-3 gap-3">
-                                ${machines.length === 0 ? '<p class="col-span-3 text-center p-20 text-gray-300 font-bold uppercase italic">Buscando máquinas...</p>' : ''}
-                                ${machines.map(m => `
-                                    <div onclick="window.openQuickStatus('\({m.id}')" class="aspect-square rounded-2xl p-3 flex flex-col justify-between shadow-md relative overflow-hidden transition-all active:scale-95 border-2 \){m.status === 'vermelho' ? 'border-red-500 bg-red-500 text-white' : (m.status === 'verde' ? 'bg-green-500 text-white' : (m.status === 'amarelo' ? 'bg-yellow-400 text-black' : (m.status === 'azul' ? 'bg-blue-500 text-white' : 'bg-purple-500 text-white')))}">
-                                        <div class="text-[10px] font-black opacity-60">#${m.id}</div>
-                                        <div class="flex flex-col items-center justify-center flex-1 text-center">
-                                            <span class="text-[9px] font-bold truncate w-full opacity-90 mb-1 uppercase leading-tight">${m.hospital || 'BASE'}</span>
-                                            <span class="text-2xl font-black leading-none tracking-tighter">${m.time || '--:--'}</span>
-                                        </div>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        ` : `
-                            <div class="p-6 bg-white min-h-screen" style="font-family: Arial, sans-serif;">
-                                <h2 class="text-3xl font-black border-b-8 border-black pb-4 mb-10 text-blue-900 uppercase">RESUMO</h2>
-                                <div class="space-y-8 text-left">
-                                    ${window.state.history.slice().reverse().map(l => `
-                                        <div class="border-b-2 border-gray-50 pb-6">
-                                            <p class="text-[10px] font-black text-gray-400 mb-2 uppercase">\({l.driver} • \){l.timestamp}</p>
-                                            <p class="text-[18px] font-bold text-gray-900 uppercase leading-tight"><span class="text-blue-600">\({l.action}:</span> \){l.details}</p>
+                        <div style="padding: 15px;">
+                            ${state.tab === 1 ? `
+                                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                                    ${machines.map(m => `
+                                        <div style="aspect-ratio: 1/1; border-radius: 15px; padding: 10px; display: flex; flex-direction: column; justify-content: space-between; color: \({m.status === 'amarelo' ? 'black' : 'white'}; background: \){m.status === 'verde' ? '#22c55e' : (m.status === 'amarelo' ? '#facc15' : (m.status === 'vermelho' ? '#ef4444' : (m.status === 'azul' ? '#3b82f6' : '#a855f7')))}">
+                                            <b style="font-size: 10px; opacity: 0.7;">#${m.id}</b>
+                                            <div style="text-align: center;">
+                                                <div style="font-size: 9px; font-weight: bold; overflow: hidden; white-space: nowrap;">${m.hospital || 'BASE'}</div>
+                                                <div style="font-size: 20px; font-weight: bold;">${m.time || '--:--'}</div>
+                                            </div>
                                         </div>
                                     `).join('')}
                                 </div>
-                            </div>
-                        `}
-                    </main>
-
-                    ${window.state.quickStatusId ? renderModal() : ''}
-
-                    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 flex justify-around p-4 pb-10 shadow-2xl z-40">
-                        <button onclick="window.setTab(1)" class="p-3 ${window.state.currentTab === 1 ? 'text-blue-600 bg-blue-50 rounded-2xl' : 'text-gray-300'} font-black uppercase text-sm tracking-widest"><b>PAINEL</b></button>
-                        <button onclick="window.setTab(5)" class="p-3 ${window.state.currentTab === 5 ? 'text-blue-600 bg-blue-50 rounded-2xl' : 'text-gray-300'} font-black uppercase text-sm tracking-widest"><b>RESUMO</b></button>
-                    </nav>
-                </div>
-            `;
-        }
-
-        function renderModal() {
-            const m = window.state.machines[window.state.quickStatusId];
-            const statusOptions = [{id:'verde',label:'Base',color:'bg-green-500'},{id:'amarelo',label:'Rua',color:'bg-yellow-400'},{id:'vermelho',label:'Recolher',color:'bg-red-500'},{id:'azul',label:'Saindo',color:'bg-blue-500'},{id:'roxo',label:'Voltando',color:'bg-purple-500'}];
-            const hospitals = ['Erasto Gaertner', 'Erastinho', 'Marcelino Champagnat', 'Nações', 'Oswaldo Cruz', 'Fraturas XV', 'Pilar', 'Graças', 'Nossa Saúde', 'INC Campo Comprido', 'Maternidade Trabalhador', 'Marillac', 'Papa Francisco', 'Yoshimi', 'Alberto', 'BASE'];
-
-            return `
-                <div class="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-end">
-                    <div class="bg-white w-full p-8 rounded-t-[50px] max-h-[90vh] overflow-y-auto pb-20 shadow-2xl">
-                        <h3 class="text-2xl font-black text-blue-900 mb-8 text-center uppercase italic underline">MÁQUINA #${m.id}</h3>
-                        <div class="grid grid-cols-2 gap-3 mb-8">
-                            ${statusOptions.map(opt => `
-                                <button onclick="window.selectStatus('\({opt.id}')" class="flex items-center gap-3 p-5 rounded-3xl border-4 \){window.state.tempStatus === opt.id ? 'border-blue-600 bg-blue-50' : 'border-gray-100'}">
-                                    <div class="w-5 h-5 rounded-full ${opt.color}"></div>
-                                    <span class="font-black text-[10px] uppercase">${opt.label}</span>
-                                </button>
-                            `).join('')}
+                            ` : `
+                                <div style="background: white; padding: 20px; border-radius: 20px; min-height: 60vh;">
+                                    <h2 style="border-bottom: 4px solid black; padding-bottom: 10px; color: #1e3a8a;">RESUMO</h2>
+                                    ${state.history.slice().reverse().map(h => `
+                                        <div style="border-bottom: 1px solid #eee; padding: 15px 0;">
+                                            <small style="color: #9ca3af;">\({h.driver} • \){h.timestamp}</small>
+                                            <div style="font-size: 16px; font-weight: bold; margin-top: 5px; text-transform: uppercase;">${h.details}</div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            `}
                         </div>
-                        <div class="mb-8 overflow-x-auto whitespace-nowrap py-4 bg-gray-50 rounded-3xl p-4">
-                             <div class="inline-flex gap-2">
-                                \({hospitals.map(h => `<button onclick="window.selectHosp('\){h}')" class="p-5 px-8 rounded-2xl font-black text-[10px] border-4 \({window.state.tempHosp === h ? 'bg-blue-600 text-white border-blue-600 shadow-lg' : 'bg-white text-gray-500 border-gray-100'} uppercase">\){h}</button>`).join('')}
-                             </div>
-                        </div>
-                        <input id="tempTime" type="time" value="${window.state.tempTime || '00:00'}" class="w-full bg-gray-100 p-6 rounded-3xl font-black text-5xl text-center mb-8 border-none text-blue-900">
-                        <div class="flex gap-4">
-                            <button onclick="window.closeQuickStatus()" class="flex-1 font-black text-gray-400 uppercase tracking-widest text-xs">CANCELAR</button>
-                            <button onclick="window.confirmUpdate('${m.id}')" class="flex-[2] bg-blue-600 text-white p-7 rounded-[40px] font-black text-2xl shadow-2xl active:scale-95 transition-all">SALVAR OK</button>
+
+                        <div style="position: fixed; bottom: 0; left: 0; right: 0; background: white; display: flex; justify-content: space-around; padding: 20px; border-top: 1px solid #eee; box-shadow: 0 -5px 15px rgba(0,0,0,0.05);">
+                            <button onclick="window.setTab(1)" style="border: none; background: \({state.tab === 1 ? '#eff6ff' : 'none'}; color: \){state.tab === 1 ? '#2563eb' : '#d1d5db'}; padding: 10px 20px; border-radius: 10px; font-weight: bold;">PAINEL</button>
+                            <button onclick="window.setTab(2)" style="border: none; background: \({state.tab === 2 ? '#eff6ff' : 'none'}; color: \){state.tab === 2 ? '#2563eb' : '#d1d5db'}; padding: 10px 20px; border-radius: 10px; font-weight: bold;">RESUMO</button>
                         </div>
                     </div>
-                </div>
-            `;
+                `;
+            }
+
+            window.doLogin = (u) => { state.user = u; localStorage.setItem('sosrim_user', u); render(); };
+            window.setTab = (t) => { state.tab = t; render(); };
+
+            onValue(ref(db, 'machines'), (snap) => { state.machines = snap.val() || {}; render(); });
+            onValue(ref(db, 'history'), (snap) => { state.history = Object.values(snap.val() || {}); render(); });
+            
+            render();
+        } catch (e) {
+            document.getElementById('app').innerHTML = "Erro de carregamento: " + e.message;
         }
-
-        window.login = (name) => { window.state.user = name; localStorage.setItem('sosrim_user', name); render(); };
-        window.logout = () => { localStorage.removeItem('sosrim_user'); window.state.user = null; render(); };
-        window.setTab = (t) => { window.state.currentTab = t; render(); };
-        window.openQuickStatus = (id) => { 
-            const m = window.state.machines[id];
-            window.state.quickStatusId = id;
-            window.state.tempStatus = m.status;
-            window.state.tempHosp = m.hospital;
-            window.state.tempTime = m.time;
-            render();
-        };
-        window.closeQuickStatus = () => { window.state.quickStatusId = null; render(); };
-        window.selectStatus = (s) => { window.state.tempStatus = s; render(); };
-        window.selectHosp = (h) => { window.state.tempHosp = h; render(); };
-        window.confirmUpdate = (id) => {
-            const timeVal = document.getElementById('tempTime').value || '00:00';
-            update(ref(db, `machines/${id}`), { status: window.state.tempStatus, hospital: window.state.tempHosp, time: timeVal });
-            push(ref(db, 'history'), { driver: window.state.user, timestamp: new Date().toLocaleTimeString('pt-BR'), action: "MÁQUINA", details: `MAQ#\({id} em \){window.state.tempHosp} (${window.state.tempStatus.toUpperCase()})` });
-            window.state.quickStatusId = null;
-            render();
-        };
-
-        onValue(ref(db, 'machines'), (snap) => { window.state.machines = snap.val() || {}; render(); });
-        onValue(ref(db, 'history'), (snap) => { window.state.history = Object.values(snap.val() || {}); render(); });
-        
-        window.onload = render;
     </script>
 </body>
 </html>
