@@ -3,52 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SOSRIM</title>
-    <!-- LINK QUE FUNCIONOU NO TESTE ANTERIOR -->
+    <title>SOSRIM FULL</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/8.10.0/firebase.js"></script>
     <style>
-        body { margin: 0; font-family: sans-serif; background: #f1f5f9; color: #1e3a8a; }
-        header { background: #fff; padding: 15px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; }
+        body { margin: 0; font-family: sans-serif; background: #f1f5f9; color: #1e3a8a; padding-bottom: 100px; }
+        header { background: #fff; padding: 15px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
         
-        .grid { display: block; padding: 8px; overflow: hidden; }
-        .card { 
-            width: 30%; 
-            aspect-ratio: 1/1; 
-            float: left; 
-            margin: 1.5%; 
-            border-radius: 15px; 
-            color: white; 
-            text-align: center; 
-            font-weight: bold; 
-            padding: 8px; 
-            box-sizing: border-box; 
-            display: flex;
-            flex-direction: column;
-            justify-content: space-around;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
+        /* GRID DE 3 COLUNAS */
+        .grid { display: block; padding: 5px; overflow: hidden; }
+        .card { width: 30%; aspect-ratio: 1/1; float: left; margin: 1.5%; border-radius: 15px; color: white; text-align: center; font-weight: bold; padding: 5px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-around; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: none; }
         
-        .verde { background: #22c55e; } 
-        .amarelo { background: #facc15; color: black; } 
-        .vermelho { background: #ef4444; }
-        .azul { background: #2563eb; } 
-        .roxo { background: #a855f7; }
+        .verde { background: #22c55e; } .amarelo { background: #facc15; color: black; } .vermelho { background: #ef4444; animation: pulse 1.5s infinite; }
+        .azul { background: #2563eb; } .roxo { background: #a855f7; }
+        @keyframes pulse { 50% { opacity: 0.6; } }
 
-        .time { font-size: 18px; font-weight: 900; display: block; }
-        .hosp { font-size: 8px; text-transform: uppercase; display: block; opacity: 0.9; overflow: hidden; height: 10px; }
+        .time { font-size: 20px; font-weight: 900; }
+        .hosp { font-size: 8px; text-transform: uppercase; opacity: 0.9; }
 
-        nav { position: fixed; bottom: 0; width: 100%; background: #fff; display: flex; padding: 15px 0 35px 0; border-top: 1px solid #ddd; }
-        nav button { flex: 1; border: none; background: none; font-weight: bold; color: #64748b; font-size: 11px; text-transform: uppercase; }
-        
-        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
+        /* MENU INFERIOR */
+        nav { position: fixed; bottom: 0; width: 100%; background: #fff; display: flex; padding: 10px 0 30px 0; border-top: 1px solid #ddd; z-index: 100; }
+        nav button { flex: 1; border: none; background: none; font-weight: bold; color: #64748b; font-size: 10px; }
+        nav .active { color: #2563eb; transform: scale(1.1); }
+
+        /* MODAL */
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 20px; }
         .modal-content { background: white; width: 100%; border-radius: 20px; padding: 20px; text-align: center; }
-        .btn-status { width: 100%; padding: 15px; margin: 5px 0; border-radius: 10px; border: none; font-weight: bold; color: white; text-transform: uppercase; }
+        .btn-status { width: 100%; padding: 15px; margin: 5px 0; border-radius: 12px; border: none; font-weight: bold; color: white; text-transform: uppercase; }
+        
+        input { width: 100%; padding: 15px; margin: 10px 0; border-radius: 10px; border: 1px solid #ccc; font-size: 16px; box-sizing: border-box; }
+        .btn-add { width: 100%; padding: 15px; background: #2563eb; color: white; border: none; border-radius: 10px; font-weight: bold; }
     </style>
 </head>
 <body>
-    <div id="app">
-        <div style="padding: 50px; text-align: center;"><h1>SOSRIM</h1><p>Iniciando...</p></div>
-    </div>
+    <div id="app"></div>
 
     <script>
         var config = {
@@ -57,81 +44,67 @@
             projectId: "sosrim-592ab"
         };
 
-        var state = {
-            user: localStorage.getItem('sos_user'),
-            machines: {},
-            tab: 1,
-            editingId: null
-        };
+        var state = { user: localStorage.getItem('sos_user'), machines: {}, hospitals: {}, tab: 1, editingId: null };
 
         function render() {
             var root = document.getElementById('app');
-            
-            // TELA DE LOGIN
             if (!state.user) {
-                var nomes = ['Sergio', 'Aderildo', 'Jairo'];
-                var botoes = '';
-                for (var i=0; i<nomes.length; i++) {
-                    botoes += '<button onclick="login(\''+nomes[i]+'\')" style="width:100%; padding:20px; margin-bottom:10px; border-radius:15px; border:none; background:#2563eb; color:white; font-weight:bold; font-size:20px;">'+nomes[i].toUpperCase()+'</button>';
-                }
-                root.innerHTML = '<div style="padding:40px; text-align:center;"><h1 style="color:#2563eb; font-size:40px; margin:0;">SOSRIM</h1><p>QUEM ESTÁ DIRIGINDO?</p>' + botoes + '</div>';
+                root.innerHTML = '<div style="padding:40px; text-align:center;"><h1>SOSRIM</h1>' + ['Sergio', 'Aderildo', 'Jairo'].map(function(n){ return '<button onclick="login(\''+n+'\')" style="width:100%; padding:20px; margin-bottom:10px; border-radius:15px; border:none; background:#2563eb; color:white; font-weight:bold; font-size:20px;">'+n.toUpperCase()+'</button>'; }).join('') + '</div>';
                 return;
             }
 
-            // PAINEL DE MÁQUINAS
             var html = '<header><span>SOSRIM 🚑</span><span onclick="logout()">' + state.user + ' 🚪</span></header>';
-            html += '<div class="grid">';
             
-            for (var id in state.machines) {
-                var m = state.machines[id];
-                html += '<div class="card ' + m.status + '" onclick="openEdit(\'' + id + '\')">' +
-                    '<span style="font-size:10px; opacity:0.8;">#' + m.id + '</span>' +
-                    '<div><span class="hosp">' + (m.hospital || 'BASE') + '</span>' +
-                    '<span class="time">' + (m.time || '--:--') + '</span></div>' +
-                '</div>';
+            // ABA 1: PAINEL (GRID)
+            if (state.tab === 1) {
+                html += '<div class="grid">';
+                var ids = Object.keys(state.machines).sort(function(a,b){return a-b;});
+                for (var i=0; i<ids.length; i++) {
+                    var m = state.machines[ids[i]];
+                    html += '<div class="card ' + m.status + '" onclick="openEdit(\'' + m.id + '\')"><span style="font-size:10px;">#' + m.id + '</span><div><span class="hosp">' + (m.hospital || 'BASE') + '</span><span class="time">' + (m.time || '--:--') + '</span></div></div>';
+                }
+                html += '</div>';
             }
+
+            // ABA 3: HOSPITAIS
+            if (state.tab === 3) {
+                html += '<div style="padding:20px;"><h3>Cadastrar Hospital</h3><input id="hN" placeholder="Nome do Hospital"><button class="btn-add" onclick="addH()">SALVAR</button><hr>';
+                for (var id in state.hospitals) { html += '<div style="background:white; padding:10px; margin-bottom:5px; border-radius:10px;">' + state.hospitals[id].name + '</div>'; }
+                html += '</div>';
+            }
+
+            // ABA 4: FROTA (MÁQUINAS)
+            if (state.tab === 4) {
+                html += '<div style="padding:20px;"><h3>Cadastrar Máquina</h3><input id="mI" type="number" placeholder="Número da Máquina"><button class="btn-add" onclick="addM()">ADICIONAR À FROTA</button><hr><p>Máquinas na frota: ' + Object.keys(state.machines).length + '</p></div>';
+            }
+
+            html += '<nav><button onclick="setTab(1)" class="'+(state.tab===1?'active':'')+'">PAINEL</button><button onclick="setTab(3)" class="'+(state.tab===3?'active':'')+'">HOSP</button><button onclick="setTab(4)" class="'+(state.tab===4?'active':'')+'">FROTA</button></nav>';
             
-            html += '</div>';
-            html += '<nav><button onclick="setTab(1)">PAINEL</button><button onclick="setTab(5)">RELATÓRIO</button></nav>';
-            
-            // JANELA DE MUDANÇA DE STATUS (MODAL)
             if (state.editingId) {
                 var m = state.machines[state.editingId];
-                html += '<div class="modal"><div class="modal-content">' +
-                    '<h3 style="margin-top:0;">MÁQUINA #' + m.id + '</h3>' +
-                    '<button onclick="save(\'verde\',\'BASE\')" class="btn-status verde">BASE (VERDE)</button>' +
-                    '<button onclick="save(\'amarelo\',\'RUA\')" class="btn-status amarelo">RUA (AMARELO)</button>' +
-                    '<button onclick="save(\'vermelho\',\'RECOLHER\')" class="btn-status vermelho">RECOLHER (VERMELHO)</button>' +
-                    '<button onclick="save(\'azul\',\'SAINDO\')" class="btn-status azul">SAINDO (AZUL)</button>' +
-                    '<button onclick="save(\'roxo\',\'VOLTANDO\')" class="btn-status roxo">VOLTANDO (ROXO)</button>' +
-                    '<button onclick="closeEdit()" style="margin-top:15px; background:none; border:none; color:#999; font-weight:bold;">CANCELAR</button>' +
-                '</div></div>';
+                html += '<div class="modal"><div class="modal-content"><h3>MÁQUINA #' + m.id + '</h3>';
+                var st = [['verde','Base'],['amarelo','Rua'],['vermelho','Recolher'],['azul','Saindo'],['roxo','Voltando']];
+                for(var i=0; i<st.length; i++) { html += '<button onclick="saveS(\''+st[i][0]+'\',\'BASE\')" class="btn-status '+st[i][0]+'">'+st[i][1]+'</button>'; }
+                html += '<button onclick="closeEdit()" style="margin-top:10px; border:none; background:none; color:#999;">FECHAR</button></div></div>';
             }
 
             root.innerHTML = html;
         }
 
-        // COMANDOS DO SISTEMA
-        window.login = function(u) { state.user = u; localStorage.setItem('sos_user', u); render(); };
-        window.logout = function() { localStorage.clear(); location.reload(); };
-        window.setTab = function(t) { state.tab = t; render(); };
-        window.openEdit = function(id) { state.editingId = id; render(); };
-        window.closeEdit = function() { state.editingId = null; render(); };
-        window.save = function(s, h) {
-            var t = new Date().toLocaleTimeString('pt-BR').slice(0,5);
-            firebase.database().ref('machines/' + state.editingId).update({ status: s, hospital: h, time: t });
-            state.editingId = null;
-        };
+        window.login = function(u){ state.user=u; localStorage.setItem('sos_user',u); render(); };
+        window.logout = function(){ localStorage.clear(); location.reload(); };
+        window.setTab = function(t){ state.tab=t; render(); };
+        window.openEdit = function(id){ state.editingId=id; render(); };
+        window.closeEdit = function(){ state.editingId=null; render(); };
+        
+        window.addH = function(){ var n=document.getElementById('hN').value; if(n){ firebase.database().ref('hospitals').push({name:n}); document.getElementById('hN').value=''; } };
+        window.addM = function(){ var id=document.getElementById('mI').value; if(id){ firebase.database().ref('machines/'+id).set({id:id, status:'verde', hospital:'BASE', time:'00:00'}); document.getElementById('mI').value=''; } };
+        window.saveS = function(s,h){ var t=new Date().toLocaleTimeString('pt-BR').slice(0,5); firebase.database().ref('machines/'+state.editingId).update({status:s, hospital:h, time:t}); state.editingId=null; };
 
-        // LIGAÇÃO COM O BANCO DE DADOS
         if (typeof firebase !== 'undefined') {
             firebase.initializeApp(config);
-            firebase.database().ref('machines').on('value', function(snap) {
-                state.machines = snap.val() || {};
-                render();
-            });
-        } else {
-            document.getElementById('app').innerHTML = '<div style="padding:50px; text-align:center;"><h1>Erro de Rede</h1><p>O Google está bloqueado no seu celular.</p></div>';
+            firebase.database().ref('machines').on('value', function(s){ state.machines=s.val()||{}; render(); });
+            firebase.database().ref('hospitals').on('value', function(s){ state.hospitals=s.val()||{}; render(); });
         }
     </script>
 </body>
