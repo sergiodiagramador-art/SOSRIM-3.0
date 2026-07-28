@@ -3,91 +3,108 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SOSRIM INTELLIGENT</title>
+    <title>SOSRIM ELITE</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/8.10.0/firebase.js"></script>
     <style>
-        :root { --blue: #2563eb; --green: #22c55e; --yellow: #facc15; --red: #ef4444; --purple: #a855f7; }
-        body { margin: 0; font-family: sans-serif; background: #f1f5f9; color: #1e3a8a; padding-bottom: 120px; }
-        header { background: #fff; padding: 15px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
-        
-        .grid { display: block; padding: 5px; overflow: hidden; }
-        .card { width: 30%; aspect-ratio: 1/1; float: left; margin: 1.5%; border-radius: 15px; color: white; text-align: center; font-weight: bold; padding: 5px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-around; position: relative; }
-        
-        .verde { background: var(--green); } .amarelo { background: var(--yellow); color: black; } 
-        .vermelho { background: var(--red); animation: pulse 1.5s infinite; }
-        .azul { background: var(--blue); } .roxo { background: var(--purple); }
-        @keyframes pulse { 50% { opacity: 0.6; } }
+        /* CORES PASTÉIS MAIS SUAVES */
+        :root { 
+            --bg-verde: #dcfce7; --txt-verde: #166534;
+            --bg-amarelo: #fef9c3; --txt-amarelo: #854d0e;
+            --bg-vermelho: #fee2e2; --txt-vermelho: #991b1b;
+            --bg-azul: #dbeafe; --txt-azul: #1e40af;
+            --bg-roxo: #f3e8ff; --txt-roxo: #6b21a8;
+            --blue: #2563eb;
+        }
 
-        .btn-pin { position: absolute; top: 2px; right: 2px; background: white; color: black; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; display: flex; align-items: center; justify-content: center; text-decoration: none; border: 1px solid #ccc; }
+        body { margin: 0; font-family: 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #334155; padding-bottom: 120px; }
+        header { background: #fff; padding: 15px; font-weight: bold; box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: flex; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
+        
+        .grid { display: block; padding: 8px; overflow: hidden; }
+        
+        /* CARTÃO REESTRUTURADO */
+        .card { 
+            width: 30.33%; aspect-ratio: 1/1; float: left; margin: 1.5%; border-radius: 12px; 
+            text-align: center; padding: 8px; box-sizing: border-box; 
+            display: flex; flex-direction: column; justify-content: space-between; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.05);
+            position: relative; transition: all 0.3s;
+        }
+        
+        .card .n-maq { font-size: 10px; font-weight: bold; opacity: 0.5; text-align: left; }
+        .card .hosp-main { font-size: 11px; font-weight: 800; text-transform: uppercase; line-height: 1.1; margin: 2px 0; }
+        .card .time-lib { font-size: 18px; font-weight: 900; letter-spacing: -1px; }
 
-        nav { position: fixed; bottom: 0; width: 100%; background: #fff; display: flex; padding: 10px 0 35px 0; border-top: 1px solid #ddd; z-index: 100; }
-        nav button { flex: 1; border: none; background: none; font-weight: bold; color: #64748b; font-size: 9px; }
-        nav .active { color: var(--blue); transform: scale(1.1); }
+        /* ESTILOS DE STATUS */
+        .verde { background: var(--bg-verde); color: var(--txt-verde); }
+        .amarelo { background: var(--bg-amarelo); color: var(--txt-amarelo); }
+        .vermelho { background: var(--bg-vermelho); color: var(--txt-vermelho); }
+        .azul { background: var(--bg-azul); color: var(--txt-azul); }
+        .roxo { background: var(--bg-roxo); color: var(--txt-roxo); }
+
+        /* ALERTA DE ATRASO */
+        .atrasado { border: 2px solid #ef4444 !important; animation: alert-glow 1.5s infinite; }
+        @keyframes alert-glow { 50% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); } }
+
+        nav { position: fixed; bottom: 0; width: 100%; background: #fff; display: flex; padding: 12px 0 35px 0; border-top: 1px solid #e2e8f0; z-index: 100; }
+        nav button { flex: 1; border: none; background: none; font-weight: bold; color: #94a3b8; font-size: 10px; text-transform: uppercase; }
+        nav .active { color: var(--blue); }
 
         .page { display: none; padding: 20px; }
         .page.active { display: block; }
-        input { width: 100%; padding: 15px; margin: 10px 0; border-radius: 10px; border: 1px solid #ccc; font-size: 16px; box-sizing: border-box; }
-        .btn { width: 100%; padding: 15px; background: var(--blue); color: white; border: none; border-radius: 10px; font-weight: bold; margin-bottom: 10px; }
+        input { width: 100%; padding: 15px; margin: 8px 0; border-radius: 10px; border: 1px solid #e2e8f0; font-size: 16px; box-sizing: border-box; background: #fff; }
+        .btn { width: 100%; padding: 15px; border: none; border-radius: 10px; font-weight: bold; margin-bottom: 8px; font-size: 14px; }
         
-        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: flex; align-items: flex-end; z-index: 200; }
-        .modal-content { background: white; width: 100%; border-radius: 30px 30px 0 0; padding: 25px; text-align: center; }
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: flex-end; z-index: 200; backdrop-filter: blur(2px); }
+        .modal-content { background: white; width: 100%; border-radius: 24px 24px 0 0; padding: 25px; text-align: center; }
     </style>
 </head>
 <body>
     <div id="app">
-        <header><span>SOSRIM 🚑</span><span id="user-display">---</span></header>
+        <header><span id="user-display">SOSRIM</span><span style="opacity:0.4" onclick="location.reload()">🔄</span></header>
         
-        <div id="t1" class="page active">
-            <div id="status-gps" style="font-size: 10px; text-align: center; padding: 5px; background: #fff; margin-bottom: 5px; border-radius: 10px;">Monitoramento: Ativo 🛰️</div>
-            <div id="grid-maquinas" class="grid"></div>
-        </div>
-
-        <div id="t2" class="page">
-            <h2>Materiais Extras</h2>
-            <input id="mat-obs" placeholder="O que você está levando?">
-            <button class="btn" onclick="salvarMat()">REGISTRAR NO RELATÓRIO</button>
-        </div>
-
+        <div id="t1" class="page active"><div id="grid-maquinas" class="grid"></div></div>
+        
         <div id="t3" class="page">
-            <h2>Hospitais (PIN)</h2>
+            <h3>Hospitais</h3>
             <input id="h-nome" placeholder="Nome do Hospital">
-            <button class="btn" style="background:#000" onclick="capturarLocalizacao()">🎯 CAPTURAR LOCALIZAÇÃO ATUAL</button>
-            <p id="geo-info" style="font-size: 10px; color: gray;"></p>
-            <button class="btn" onclick="addHosp()">SALVAR HOSPITAL</button>
+            <button class="btn" style="background:#334155; color:white" onclick="addHosp()">SALVAR HOSPITAL</button>
             <div id="lista-hospitais"></div>
         </div>
 
         <div id="t4" class="page">
-            <h2>Frota</h2>
+            <h3>Frota</h3>
             <input id="m-id" type="number" placeholder="Nº da Máquina">
-            <button class="btn" onclick="addMaq()">ADICIONAR MÁQUINA</button>
+            <button class="btn" style="background:#334155; color:white" onclick="addMaq()">CADASTRAR MÁQUINA</button>
             <div id="lista-frota"></div>
         </div>
 
         <div id="t5" class="page">
-            <h2>Relatório</h2>
+            <h3>Relatório Hoje</h3>
             <div id="lista-relatorio"></div>
         </div>
 
         <nav>
             <button id="b1" onclick="setTab(1)" class="active">PAINEL</button>
-            <button id="b2" onclick="setTab(2)">MAT</button>
             <button id="b3" onclick="setTab(3)">HOSP</button>
             <button id="b4" onclick="setTab(4)">FROTA</button>
             <button id="b5" onclick="setTab(5)">RELAT</button>
         </nav>
     </div>
 
+    <!-- MODAL DE ATUALIZAÇÃO -->
     <div id="modal" class="modal" style="display:none;">
         <div class="modal-content">
-            <h3 id="modal-title">MÁQUINA</h3>
-            <div id="hosp-list" style="display:flex; overflow-x:auto; gap:10px; margin-bottom:15px; padding:10px 0;"></div>
-            <button onclick="salvar('verde')" class="btn verde">BASE (VERDE)</button>
-            <button onclick="salvar('amarelo')" class="btn amarelo" style="color:black">RUA (AMARELO)</button>
-            <button onclick="salvar('vermelho')" class="btn vermelho">RECOLHER (VERMELHO)</button>
-            <button onclick="salvar('azul')" class="btn azul">SAINDO (AZUL)</button>
-            <button onclick="salvar('roxo')" class="btn roxo">VOLTANDO (ROXO)</button>
-            <button onclick="fechar()" style="background:none; color:#999; width:100%; border:none;">CANCELAR</button>
+            <h2 id="modal-title" style="margin:0 0 15px 0">MAQ</h2>
+            <input id="lib-time" type="time" placeholder="Horário de Liberação">
+            <div id="hosp-list" style="display:flex; overflow-x:auto; gap:8px; margin-bottom:15px; padding:10px 0;"></div>
+            
+            <button onclick="salvar('verde')" class="btn" style="background:var(--bg-verde); color:var(--txt-verde)">BASE</button>
+            <button onclick="salvar('amarelo')" class="btn" style="background:var(--bg-amarelo); color:var(--txt-amarelo)">RUA</button>
+            <button onclick="salvar('vermelho')" class="btn" style="background:var(--bg-vermelho); color:var(--txt-vermelho)">RECOLHER</button>
+            <button onclick="salvar('azul')" class="btn" style="background:var(--bg-azul); color:var(--txt-azul)">SAINDO</button>
+            <button onclick="salvar('roxo')" class="btn" style="background:var(--bg-roxo); color:var(--txt-roxo)">VOLTANDO</button>
+            
+            <button onclick="fechar()" style="background:none; color:#94a3b8; width:100%; border:none; padding:10px;">FECHAR</button>
         </div>
     </div>
 
@@ -99,86 +116,63 @@
         localStorage.setItem('sos_user', user);
         document.getElementById('user-display').innerText = user;
 
-        var selId=null, selHosp="BASE", curLat=null, curLng=null;
-        var hospitaisData = {};
+        var selId=null, selHosp="BASE";
 
-        function setTab(n){ for(var i=1; i<=5; i++){ document.getElementById('t'+i).classList.remove('active'); document.getElementById('b'+i).classList.remove('active'); } document.getElementById('t'+n).classList.add('active'); document.getElementById('b'+n).classList.add('active'); }
-        function abrir(id){ selId=id; document.getElementById('modal-title').innerText="MAQ #"+id; document.getElementById('modal').style.display='flex'; }
+        function setTab(n){ for(var i=1; i<=5; i++){ if(document.getElementById('t'+i)){document.getElementById('t'+i).classList.remove('active'); document.getElementById('b'+i).classList.remove('active');} } document.getElementById('t'+n).classList.add('active'); document.getElementById('b'+n).classList.add('active'); }
+        function abrir(id, time){ 
+            selId=id; 
+            document.getElementById('modal-title').innerText="MÁQUINA "+id; 
+            document.getElementById('lib-time').value = time || "";
+            document.getElementById('modal').style.display='flex'; 
+        }
         function fechar(){ document.getElementById('modal').style.display='none'; }
         
-        function capturarLocalizacao() {
-            navigator.geolocation.getCurrentPosition(function(pos) {
-                curLat = pos.coords.latitude; curLng = pos.coords.longitude;
-                document.getElementById('geo-info').innerText = "📍 Localização capturada: " + curLat.toFixed(4) + ", " + curLng.toFixed(4);
-            });
-        }
-
-        function addHosp(){ 
-            var n = document.getElementById('h-nome').value;
-            if(n){ db.ref('hospitals').push({name:n, lat:curLat, lng:curLng}); document.getElementById('h-nome').value=''; curLat=null; curLng=null; }
-        }
-
-        function addMaq(){ var id=document.getElementById('m-id').value; if(id){ db.ref('machines/'+id).set({id:id, status:'verde', hospital:'BASE', time:'00:00'}); document.getElementById('m-id').value=''; } }
+        function addHosp(){ var n=document.getElementById('h-nome').value; if(n){ db.ref('hospitals').push({name:n}); document.getElementById('h-nome').value=''; } }
+        function addMaq(){ var id=document.getElementById('m-id').value; if(id){ db.ref('machines/'+id).set({id:id, status:'verde', hospital:'BASE', time:'--:--'}); document.getElementById('m-id').value=''; } }
 
         function salvar(s){
-            var t = new Date().toLocaleTimeString('pt-BR').slice(0,5);
-            db.ref('machines/'+selId).update({status:s, hospital:selHosp, time:t});
-            db.ref('history').push({ driver:user, time:new Date().toLocaleString('pt-BR'), msg:"MAQ #"+selId+" -> "+selHosp+" ("+s.toUpperCase()+")" });
+            var lib = document.getElementById('lib-time').value;
+            db.ref('machines/'+selId).update({status:s, hospital:selHosp, time:lib});
+            db.ref('history').push({ driver:user, time:new Date().toLocaleString('pt-BR'), msg:"MAQ "+selId+" em "+selHosp+" ("+lib+")" });
             selHosp="BASE"; fechar();
         }
 
-        function falar(texto) {
-            var msg = new SpeechSynthesisUtterance(texto);
-            msg.lang = 'pt-BR';
-            window.speechSynthesis.speak(msg);
+        // Verificação de atraso a cada 30 segundos
+        setInterval(function() { renderGrid(); }, 30000);
+
+        function renderGrid() {
+            db.ref('machines').once('value', function(snap) {
+                var data=snap.val()||{}; var grid=document.getElementById('grid-maquinas'); grid.innerHTML='';
+                var agora = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+                
+                Object.keys(data).sort((a,b)=>a-b).forEach(function(id){
+                    var m=data[id];
+                    var isAtrasado = (m.time !== '--:--' && agora > m.time) ? 'atrasado' : '';
+                    grid.innerHTML += '<div class="card '+m.status+' '+isAtrasado+'" onclick="abrir(\''+id+'\', \''+m.time+'\')">' +
+                        '<span class="n-maq">'+id+'</span>' +
+                        '<span class="hosp-main">'+(m.hospital||'BASE')+'</span>' +
+                        '<span class="time-lib">'+m.time+'</span>' +
+                    '</div>';
+                });
+            });
         }
 
-        // MONITORAMENTO AUTOMÁTICO (A cada 2 minutos)
-        setInterval(function() {
-            navigator.geolocation.getCurrentPosition(function(pos) {
-                var lat1 = pos.coords.latitude;
-                var lon1 = pos.coords.longitude;
-                
-                for(var id in hospitaisData) {
-                    var h = hospitaisData[id];
-                    if(h.lat && h.lng) {
-                        var dist = Math.sqrt(Math.pow(lat1 - h.lat, 2) + Math.pow(lon1 - h.lng, 2));
-                        if(dist < 0.001) { // Aproximadamente 100-200 metros
-                            falar("Sérgio, você chegou no " + h.name + ". Deseja atualizar alguma máquina?");
-                            setTab(1); // Volta para o painel
-                            break;
-                        }
-                    }
-                }
-            });
-        }, 120000); // 2 minutos
-
-        db.ref('machines').on('value', function(snap){
-            var data=snap.val()||{}; var grid=document.getElementById('grid-maquinas'); var lista=document.getElementById('lista-frota');
-            grid.innerHTML=''; lista.innerHTML='';
-            Object.keys(data).sort((a,b)=>a-b).forEach(function(id){
-                var m=data[id];
-                var pinLink = 'https://www.google.com/maps/search/?api=1&query=' + (m.hospital || 'Hospital');
-                grid.innerHTML += '<div class="card '+m.status+'" onclick="abrir(\''+id+'\')"><span>#'+id+'</span><a href="'+pinLink+'" class="btn-pin" onclick="event.stopPropagation()">📍</a><span style="font-size:8px">'+(m.hospital||'BASE')+'</span><span style="font-size:18px">'+m.time+'</span></div>';
-                lista.innerHTML += '<div style="background:#fff;padding:10px;margin-bottom:5px;border-radius:10px;display:flex;justify-content:space-between;"><b>MAQ #'+id+'</b><span onclick="db.ref(\'machines/'+id+'\').remove()" style="color:red">Excluir</span></div>';
-            });
-        });
+        db.ref('machines').on('value', renderGrid);
 
         db.ref('hospitals').on('value', function(snap){
-            hospitaisData = snap.val() || {};
-            var lista=document.getElementById('lista-hospitais'); var seletor=document.getElementById('hosp-list');
-            lista.innerHTML=''; seletor.innerHTML='<button onclick="selHosp=\'BASE\';alert(\'Base OK\')" style="padding:10px;border-radius:10px;border:1px solid #ccc">BASE</button>';
-            for(var id in hospitaisData){
-                var h=hospitaisData[id];
-                lista.innerHTML += '<div style="background:#fff;padding:10px;margin-bottom:5px;border-radius:10px;display:flex;justify-content:space-between;"><b>'+h.name+'</b><span onclick="db.ref(\'hospitals/'+id+'\').remove()" style="color:red">X</span></div>';
-                seletor.innerHTML += '<button onclick="selHosp=\''+h.name+'\';alert(\'Para: '+h.name+'\')" style="padding:10px;border-radius:10px;border:1px solid #ccc;white-space:nowrap">'+h.name+'</button>';
+            var data=snap.val()||{}; var lista=document.getElementById('lista-hospitais'); var seletor=document.getElementById('hosp-list');
+            lista.innerHTML=''; seletor.innerHTML='<button onclick="selHosp=\'BASE\';alert(\'Base\')" style="padding:10px;border-radius:10px;border:1px solid #ccc;background:#fff">BASE</button>';
+            for(var id in data){
+                var h=data[id];
+                lista.innerHTML += '<div style="background:#fff;padding:12px;margin-bottom:8px;border-radius:10px;display:flex;justify-content:space-between;box-shadow:0 1px 2px rgba(0,0,0,0.05)"><b>'+h.name+'</b><span onclick="db.ref(\'hospitals/'+id+'\').remove()" style="color:#ef4444">Remover</span></div>';
+                seletor.innerHTML += '<button onclick="selHosp=\''+h.name+'\';alert(\'Hospital: '+h.name+'\')" style="padding:10px;border-radius:10px;border:1px solid #ccc;white-space:nowrap;background:#fff">'+h.name+'</button>';
             }
         });
 
         db.ref('history').limitToLast(20).on('value', function(snap){
             var lista=document.getElementById('lista-relatorio'); lista.innerHTML='';
             var items=Object.values(snap.val()||{}).reverse();
-            items.forEach(function(h){ lista.innerHTML += '<div style="border-bottom:1px solid #eee;padding:10px 0;font-size:11px;"><b>'+h.driver+'</b>: '+h.msg+'</div>'; });
+            items.forEach(function(h){ lista.innerHTML += '<div style="border-bottom:1px solid #eee;padding:10px 0;font-size:12px;"><b>'+h.driver+'</b>: '+h.msg+'</div>'; });
         });
     </script>
 </body>
