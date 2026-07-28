@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SOSRIM</title>
+    <!-- BIBLIOTECAS DE ALTA COMPATIBILIDADE -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/8.10.0/firebase-app.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/8.10.0/firebase-database.js"></script>
     <style>
-        /* VISUAL SOSRIM - 100% PURO E ESTÁVEL */
         :root {
             --blue: #2563eb; --green: #22c55e; --yellow: #facc15; 
             --red: #ef4444; --purple: #a855f7; --bg: #f8fafc;
@@ -15,55 +17,42 @@
         header { background: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
         .logo { font-size: 24px; font-weight: 900; letter-spacing: -1px; }
         .badge { background: var(--blue); color: white; padding: 6px 14px; border-radius: 20px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
-
-        /* GRADE DE 3 COLUNAS - FONTES GRANDES */
+        
+        /* GRADE DE 3 COLUNAS */
         .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 12px; }
         .card { aspect-ratio: 1/1; border-radius: 20px; padding: 12px; display: flex; flex-direction: column; justify-content: space-between; text-align: center; color: white; font-weight: bold; box-shadow: 0 4px 8px rgba(0,0,0,0.1); border: none; cursor: pointer; }
-        .card .id { font-size: 10px; opacity: 0.8; text-align: left; }
-        .card .hosp { font-size: 9px; text-transform: uppercase; white-space: nowrap; overflow: hidden; margin-bottom: 2px; }
-        .card .time { font-size: 26px; font-weight: 900; letter-spacing: -1px; }
-
-        /* STATUS COLORIDOS */
+        .card .time { font-size: 26px; font-weight: 900; }
+        
+        /* STATUS */
         .verde { background: var(--green); }
-        .amarelo { background: var(--amarelo); color: black; }
+        .amarelo { background: var(--yellow); color: black; }
         .vermelho { background: var(--red); animation: pulse 1.5s infinite; }
         .azul { background: var(--blue); }
         .roxo { background: var(--purple); }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
 
-        /* MENU INFERIOR */
-        nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 12px 0 35px 0; border-top: 1px solid #eee; box-shadow: 0 -5px 20px rgba(0,0,0,0.05); z-index: 100; }
-        nav button { border: none; background: none; color: #94a3b8; font-weight: bold; font-size: 9px; text-transform: uppercase; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-        nav button.active { color: var(--blue); transform: scale(1.1); }
+        nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 12px 0 35px 0; border-top: 1px solid #eee; z-index: 100; }
+        nav button { border: none; background: none; color: #94a3b8; font-weight: bold; font-size: 9px; text-transform: uppercase; }
+        nav button.active { color: var(--blue); }
 
-        /* TELAS E MODAIS */
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; align-items: flex-end; z-index: 200; }
-        .modal-content { background: white; width: 100%; border-radius: 40px 40px 0 0; padding: 30px; max-height: 90vh; overflow-y: auto; text-align: center; }
-        .btn-main { width: 100%; padding: 22px; background: var(--blue); color: white; border: none; border-radius: 20px; font-weight: 900; font-size: 18px; text-transform: uppercase; margin-bottom: 10px; box-shadow: 0 10px 20px rgba(37,99,235,0.2); }
-        input { width: 100%; padding: 18px; border-radius: 15px; border: 2px solid #eee; margin-bottom: 15px; font-size: 18px; text-align: center; font-weight: bold; }
-        
-        /* LISTAS */
-        .item-lista { background: white; padding: 15px; border-radius: 15px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .modal-content { background: white; width: 100%; border-radius: 40px 40px 0 0; padding: 30px; text-align: center; }
+        .btn-main { width: 100%; padding: 20px; background: var(--blue); color: white; border: none; border-radius: 20px; font-weight: 900; font-size: 18px; margin-bottom: 10px; }
+        input { width: 100%; padding: 15px; border-radius: 15px; border: 2px solid #eee; margin-bottom: 15px; font-size: 18px; text-align: center; }
     </style>
 </head>
 <body>
-    <div id="app">
-        <div style="height:100vh; display:flex; align-items:center; justify-content:center; font-weight:bold; color:var(--blue);">CARREGANDO SOSRIM...</div>
-    </div>
+    <div id="app"></div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, onValue, update, push, set, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-
-        // CHAVE REAL RECUPERADA COM SUCESSO
+    <script>
         const firebaseConfig = {
             apiKey: "AIzaSyA896LR0DJv-TKqwt_DpkgO1MeaRKdKwP4",
             databaseURL: "https://sosrim-592ab-default-rtdb.firebaseio.com",
             projectId: "sosrim-592ab"
         };
 
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
 
         let state = {
             user: localStorage.getItem('sosrim_user') || null,
@@ -74,7 +63,7 @@
         function render() {
             const root = document.getElementById('app');
             if (!state.user) {
-                root.innerHTML = `<div style="height:100vh; display:flex; align-items:center; justify-content:center; padding:20px;"><div style="background:white; padding:40px; border-radius:40px; width:100%; max-width:400px; text-align:center; border-top:12px solid var(--blue); shadow:0 20px 50px rgba(0,0,0,0.1);"><h1 style="margin:0; font-size:45px; font-weight:900; color:var(--blue);">SOSRIM</h1><p style="color:#94a3b8; font-weight:bold; margin-bottom:40px;">LOGÍSTICA</p>\({['Sergio', 'Aderildo', 'Jairo'].map(n => `<button onclick="window.doLogin('\){n}')" class="btn-main">${n}</button>`).join('')}</div></div>`;
+                root.innerHTML = `<div style="height:100vh; display:flex; align-items:center; justify-content:center; padding:20px;"><div style="background:white; padding:40px; border-radius:40px; width:100%; text-align:center;"><h1 style="font-size:40px; font-weight:900; color:var(--blue);">SOSRIM</h1>\({['Sergio', 'Aderildo', 'Jairo'].map(n => `<button onclick="window.doLogin('\){n}')" class="btn-main">${n}</button>`).join('')}</div></div>`;
                 return;
             }
 
@@ -82,11 +71,10 @@
                 <header><div class="logo">SOSRIM 🚑</div><div class="badge" onclick="window.doLogout()">${state.user}</div></header>
                 <main style="padding-bottom:120px;">${renderTab()}</main>
                 <nav>
-                    <button onclick="window.setTab(1)" class="${state.tab===1?'active':''}"><span>📊</span>PAINEL</button>
-                    <button onclick="window.setTab(2)" class="${state.tab===2?'active':''}"><span>📍</span>MAPA</button>
-                    <button onclick="window.setTab(3)" class="${state.tab===3?'active':''}"><span>🏥</span>HOSP</button>
-                    <button onclick="window.setTab(4)" class="${state.tab===4?'active':''}"><span>🚜</span>MAQ</button>
-                    <button onclick="window.setTab(5)" class="${state.tab===5?'active':''}"><span>📋</span>RELAT</button>
+                    <button onclick="window.setTab(1)" class="${state.tab===1?'active':''}">PAINEL</button>
+                    <button onclick="window.setTab(3)" class="${state.tab===3?'active':''}">HOSP</button>
+                    <button onclick="window.setTab(4)" class="${state.tab===4?'active':''}">MAQ</button>
+                    <button onclick="window.setTab(5)" class="${state.tab===5?'active':''}">RELAT</button>
                 </nav>
                 ${state.editingId ? renderModal() : ''}
             `;
@@ -95,12 +83,11 @@
         function renderTab() {
             if (state.tab === 1) {
                 const maqs = Object.values(state.machines).sort((a,b) => a.id - b.id);
-                return `<div class="grid">\({maqs.map(m => `<div class="card \){m.status}" onclick="window.openEdit('\({m.id}')"><div class="id">#\){m.id}</div><div><div class="hosp">\({m.hospital || 'BASE'}</div><div class="time">\){m.time || '--:--'}</div></div></div>`).join('')}</div>`;
+                return `<div class="grid">\({maqs.map(m => `<div class="card \){m.status}" onclick="window.openEdit('\({m.id}')"><div style="font-size:10px; text-align:left;">#\){m.id}</div><div><div style="font-size:9px; text-transform:uppercase;">\({m.hospital || 'BASE'}</div><div class="time">\){m.time || '--:--'}</div></div></div>`).join('')}</div>`;
             }
-            if (state.tab === 2) return `<div style="padding:100px 20px; text-align:center; color:#94a3b8; font-weight:bold; text-transform:uppercase;">Mapa em breve</div>`;
-            if (state.tab === 3) return `<div style="padding:20px;"><h2>Hospitais</h2><input id="hName" placeholder="Nome do Hospital"><button onclick="window.addHosp()" class="btn-main">Adicionar</button><div style="margin-top:20px;">\({Object.entries(state.hospitals).map(([id, h]) => `<div class="item-lista"><b>\){h.name}</b><span onclick="window.delHosp('${id}')" style="color:red; font-weight:bold; cursor:pointer;">APAGAR</span></div>`).join('')}</div></div>`;
-            if (state.tab === 4) return `<div style="padding:20px;"><h2>Gerenciar Máquinas</h2><input id="mId" type="number" placeholder="Número da Máquina"><button onclick="window.addMaq()" class="btn-main">Adicionar Frota</button><div class="grid" style="margin-top:20px;">\({Object.values(state.machines).sort((a,b)=>a.id-b.id).map(m => `<div style="background:white; padding:15px; border-radius:15px; text-align:center; position:relative; box-shadow:0 2px 5px rgba(0,0,0,0.05);"><b>MAQ #\){m.id}</b><div onclick="window.delMaq('${m.id}')" style="position:absolute; top:2px; right:5px; color:red; font-size:10px; cursor:pointer;">X</div></div>`).join('')}</div></div>`;
-            if (state.tab === 5) return `<div style="padding:25px; background:white; min-height:100vh;"><h2 style="border-bottom:6px solid black; padding-bottom:10px; font-size:32px; font-weight:900;">RELATÓRIO</h2>\({state.history.slice().reverse().map(h => `<div style="border-bottom:1px solid #eee; padding:20px 0;"><small style="color:#94a3b8; font-weight:bold; text-transform:uppercase;">\){h.driver} | \({h.timestamp}</small><p style="font-size:18px; font-weight:bold; margin:5px 0; text-transform:uppercase;"><span style="color:var(--blue);">\){h.action}:</span> ${h.details}</p></div>`).join('')}</div>`;
+            if (state.tab === 3) return `<div style="padding:20px;"><h2>Hospitais</h2><input id="hName" placeholder="Nome do Hospital"><button onclick="window.addHosp()" class="btn-main">Adicionar</button>\({Object.entries(state.hospitals).map(([id, h]) => `<div style="background:white; padding:15px; border-radius:15px; margin-top:10px; display:flex; justify-content:space-between;"><b>\){h.name}</b><span onclick="window.delHosp('${id}')" style="color:red; cursor:pointer;">X</span></div>`).join('')}</div>`;
+            if (state.tab === 4) return `<div style="padding:20px;"><h2>Frota</h2><input id="mId" type="number" placeholder="Nº da Máquina"><button onclick="window.addMaq()" class="btn-main">Adicionar</button><div class="grid">\({Object.values(state.machines).sort((a,b)=>a.id-b.id).map(m => `<div style="background:white; padding:10px; border-radius:10px; text-align:center; position:relative; color:black;"><b>#\){m.id}</b><div onclick="window.delMaq('${m.id}')" style="position:absolute; top:0; right:5px; color:red; cursor:pointer;">x</div></div>`).join('')}</div></div>`;
+            if (state.tab === 5) return `<div style="padding:25px; background:white; min-height:100vh;"><h2 style="font-size:32px; font-weight:900; border-bottom:4px solid black;">RELATÓRIO</h2>\({state.history.slice().reverse().map(h => `<div style="border-bottom:1px solid #eee; padding:15px 0;"><small>\){h.driver} | \({h.timestamp}</small><p style="font-size:18px; font-weight:bold; text-transform:uppercase;">\){h.details}</p></div>`).join('')}</div>`;
             return '';
         }
 
@@ -109,17 +96,16 @@
             const opts = [{id:'verde',n:'Base'},{id:'amarelo',n:'Rua'},{id:'vermelho',n:'Recolher'},{id:'azul',n:'Saindo'},{id:'roxo',n:'Voltando'}];
             const hosps = Object.values(state.hospitals).map(h => h.name).concat(['BASE']);
             return `<div class="modal"><div class="modal-content">
-                <h2 style="margin:0 0 20px 0; font-size:30px; font-weight:900;">MAQ #${m.id}</h2>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px;">\({opts.map(o => `<button onclick="window.setTS('\){o.id}')" style="padding:18px; border-radius:15px; border:4px solid \({state.tStatus===o.id?'var(--blue)':'#f4f4f4'}; background:white; font-weight:bold; font-size:11px;">\){o.n.toUpperCase()}</button>`).join('')}</div>
-                <div style="display:flex; overflow-x:auto; gap:10px; padding-bottom:15px; margin-bottom:20px;">\({hosps.map(h => `<button onclick="window.setTH('\){h}')" style="padding:15px 25px; border-radius:15px; border:3px solid \({state.tHosp===h?'var(--blue)':'transparent'}; background:\){state.tHosp===h?'var(--blue)':'#f1f5f9'}; color:\({state.tHosp===h?'white':'#64748b'}; font-weight:bold; white-space:nowrap;">\){h}</button>`).join('')}</div>
-                <input id="tTime" type="time" value="${state.tTime}" style="font-size:50px; height:100px; background:#f4f4f4; border:none; margin-bottom:30px;">
-                <div style="display:flex; gap:15px;"><button onclick="window.closeEdit()" style="flex:1; border:none; background:none; font-weight:bold; color:#94a3b8;">VOLTAR</button><button onclick="window.saveEdit()" class="btn-main" style="flex:2;">SALVAR OK</button></div>
+                <h2 style="font-size:30px; font-weight:900;">MAQ #${m.id}</h2>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px;">\({opts.map(o => `<button onclick="window.setTS('\){o.id}')" style="padding:15px; border-radius:15px; border:4px solid \({state.tStatus===o.id?'var(--blue)':'#f4f4f4'}; background:white; font-weight:bold;">\){o.n.toUpperCase()}</button>`).join('')}</div>
+                <div style="display:flex; overflow-x:auto; gap:10px; margin-bottom:20px; padding-bottom:10px;">\({hosps.map(h => `<button onclick="window.setTH('\){h}')" style="padding:10px 20px; border-radius:15px; border:2px solid \({state.tHosp===h?'var(--blue)':'#eee'}; background:\){state.tHosp===h?'var(--blue)':'white'}; color:\({state.tHosp===h?'white':'#64748b'}; white-space:nowrap; font-weight:bold;">\){h}</button>`).join('')}</div>
+                <input id="tTime" type="time" value="${state.tTime}" style="font-size:50px; height:100px; background:#f4f4f4; border:none;">
+                <div style="display:flex; gap:10px;"><button onclick="window.closeEdit()" style="flex:1; color:#94a3b8; font-weight:bold; background:none; border:none;">VOLTAR</button><button onclick="window.saveEdit()" class="btn-main" style="flex:2;">SALVAR</button></div>
             </div></div>`;
         }
 
-        // AÇÕES DO SISTEMA
         window.doLogin = (u) => { state.user = u; localStorage.setItem('sosrim_user', u); render(); };
-        window.doLogout = () => { if(confirm('Sair do SOSRIM?')){ localStorage.removeItem('sosrim_user'); location.reload(); }};
+        window.doLogout = () => { if(confirm('Sair?')){ localStorage.removeItem('sosrim_user'); location.reload(); }};
         window.setTab = (t) => { state.tab = t; render(); };
         window.openEdit = (id) => { const m = state.machines[id]; state.editingId = id; state.tStatus = m.status; state.tHosp = m.hospital; state.tTime = m.time || '00:00'; render(); };
         window.closeEdit = () => { state.editingId = null; render(); };
@@ -127,19 +113,18 @@
         window.setTH = (h) => { state.tHosp = h; render(); };
         window.saveEdit = () => {
             const time = document.getElementById('tTime').value;
-            update(ref(db, 'machines/'+state.editingId), { status: state.tStatus, hospital: state.tHosp, time: time });
-            push(ref(db, 'history'), { driver: state.user, timestamp: new Date().toLocaleTimeString('pt-BR'), action: "MÁQUINA", details: `MAQ#\({state.editingId} EM \){state.tHosp} (${state.tStatus.toUpperCase()})` });
+            db.ref('machines/'+state.editingId).update({ status: state.tStatus, hospital: state.tHosp, time: time });
+            db.ref('history').push({ driver: state.user, timestamp: new Date().toLocaleTimeString('pt-BR'), details: `MAQ#\({state.editingId} EM \){state.tHosp} (${state.tStatus.toUpperCase()})` });
             state.editingId = null; render();
         };
-        window.addHosp = () => { const n = document.getElementById('hName').value; if(n){ push(ref(db, 'hospitals'), { name: n }); document.getElementById('hName').value=''; }};
-        window.delHosp = (id) => { if(confirm('Apagar hospital?')) remove(ref(db, 'hospitals/'+id)); };
-        window.addMaq = () => { const id = document.getElementById('mId').value; if(id){ set(ref(db, 'machines/'+id), { id: id, status: 'verde', hospital: 'BASE', time: '00:00' }); document.getElementById('mId').value=''; }};
-        window.delMaq = (id) => { if(confirm('Remover máquina da frota?')) remove(ref(db, 'machines/'+id)); };
+        window.addHosp = () => { const n = document.getElementById('hName').value; if(n){ db.ref('hospitals').push({ name: n }); document.getElementById('hName').value=''; }};
+        window.delHosp = (id) => { if(confirm('Apagar?')) db.ref('hospitals/'+id).remove(); };
+        window.addMaq = () => { const id = document.getElementById('mId').value; if(id){ db.ref('machines/'+id).set({ id: id, status: 'verde', hospital: 'BASE', time: '00:00' }); document.getElementById('mId').value=''; }};
+        window.delMaq = (id) => { if(confirm('Remover?')) db.ref('machines/'+id).remove(); };
 
-        // SINCRONIZAÇÃO EM TEMPO REAL
-        onValue(ref(db, 'machines'), (s) => { state.machines = s.val() || {}; render(); });
-        onValue(ref(db, 'hospitals'), (s) => { state.hospitals = s.val() || {}; render(); });
-        onValue(ref(db, 'history'), (s) => { state.history = Object.values(s.val() || {}); render(); });
+        db.ref('machines').on('value', (s) => { state.machines = s.val() || {}; render(); });
+        db.ref('hospitals').on('value', (s) => { state.hospitals = s.val() || {}; render(); });
+        db.ref('history').on('value', (s) => { state.history = Object.values(s.val() || {}); render(); });
     </script>
 </body>
 </html>
