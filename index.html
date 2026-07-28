@@ -4,41 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SOSRIM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        body { margin: 0; font-family: Arial, sans-serif; background: #f4f7f6; overscroll-none: contain; color: #1e293b; }
-        .btn { border: none; border-radius: 15px; font-weight: bold; cursor: pointer; transition: 0.2s; text-transform: uppercase; }
-        .btn:active { transform: scale(0.95); }
-        
-        /* Layout Principal */
-        header { background: white; padding: 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 50; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 15px 0 35px 0; border-top: 1px solid #eee; box-shadow: 0 -10px 20px rgba(0,0,0,0.05); z-index: 50; }
-        nav button { border: none; background: none; color: #d1d5db; padding: 12px; border-radius: 15px; font-weight: bold; font-size: 10px; text-transform: uppercase; }
-        nav button.active { background: #eff6ff; color: #2563eb; }
-
-        /* Painel de Máquinas */
-        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 15px; }
-        .card { border-radius: 20px; padding: 12px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 4px 6px rgba(0,0,0,0.1); position: relative; overflow: hidden; aspect-ratio: 1/1; }
-        .verde { background: #22c55e; color: white; }
-        .amarelo { background: #facc15; color: black; }
-        .vermelho { background: #ef4444; color: white; animation: pulse 1.5s infinite; }
-        .azul { background: #3b82f6; color: white; }
-        .roxo { background: #a855f7; color: white; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
-
-        /* Modal e Cadastros */
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: flex-end; z-index: 100; }
-        .modal-content { background: white; width: 100%; border-radius: 40px 40px 0 0; padding: 30px; box-sizing: border-box; text-align: center; max-height: 90vh; overflow-y: auto; }
-        .input-group { margin-bottom: 20px; text-align: left; }
-        input { width: 100%; padding: 18px; border-radius: 15px; border: 2px solid #eee; font-size: 16px; box-sizing: border-box; }
-        .list-item { background: white; padding: 18px; border-radius: 15px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        body { font-family: 'Arial', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .pulse-red { animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
+        .animate-up { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
     </style>
 </head>
-<body>
+<body class="bg-gray-100 overscroll-none">
     <div id="app"></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, onValue, push, update, set, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, onValue, set, push, update, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyB_REPLACE_WITH_REAL_KEY",
@@ -50,188 +31,206 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        let state = {
+        window.state = {
             user: localStorage.getItem('sosrim_user') || null,
             machines: {},
             hospitals: {},
             history: [],
-            tab: 1,
+            currentTab: 1,
             editingId: null,
             tempStatus: '', tempHosp: '', tempTime: ''
         };
 
-        function render() {
-            const root = document.getElementById('app');
-            if (!state.user) { renderLogin(root); return; }
-            renderMain(root);
-        }
+        const render = () => {
+            const appDiv = document.getElementById('app');
+            if (!window.state.user) { renderLogin(appDiv); return; }
+            renderMain(appDiv);
+            if (window.lucide) lucide.createIcons();
+        };
 
-        function renderLogin(root) {
-            root.innerHTML = `
-                <div style="height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px;">
-                    <div style="background: white; padding: 40px; border-radius: 40px; width: 100%; max-width: 400px; text-align: center; border-top: 12px solid #2563eb; box-shadow: 0 20px 50px rgba(0,0,0,0.15);">
-                        <h1 style="color: #1e3a8a; margin: 0; font-size: 50px; letter-spacing: -3px; font-weight: 900;">SOSRIM</h1>
-                        <p style="color: #9ca3af; font-weight: bold; margin-bottom: 40px; letter-spacing: 2px;">LOGÍSTICA</p>
-                        ${['Sergio', 'Aderildo', 'Jairo'].map(n => `
-                            <button class="btn" onclick="window.doLogin('\({n}')" style="width: 100%; padding: 24px; background: #2563eb; color: white; font-size: 22px; margin-bottom: 12px; box-shadow: 0 8px 15px rgba(37,99,235,0.2);">\){n}</button>
-                        `).join('')}
+        const renderLogin = (container) => {
+            container.innerHTML = `
+                <div class="min-h-screen flex items-center justify-center p-6 bg-slate-50">
+                    <div class="bg-white p-10 rounded-[40px] shadow-2xl w-full max-w-md text-center border-t-[12px] border-blue-600">
+                        <h1 class="text-5xl font-black text-blue-900 mb-2 tracking-tighter uppercase">SOSRIM</h1>
+                        <p class="text-gray-400 mb-10 font-bold tracking-widest uppercase text-sm italic text-center">Logística</p>
+                        <div class="space-y-4">
+                            ${['Sergio', 'Aderildo', 'Jairo'].map(name => `
+                                <button onclick="login('${name}')" class="w-full py-6 bg-blue-600 text-white rounded-3xl font-black text-2xl shadow-lg active:scale-95 transition-all uppercase">
+                                    ${name}
+                                </button>
+                            `).join('')}
+                        </div>
                     </div>
                 </div>
             `;
-        }
+        };
 
-        function renderMain(root) {
-            root.innerHTML = `
-                <header>
-                    <b style="font-size: 26px; color: #1e3a8a; font-weight: 900; letter-spacing: -1px;">SOSRIM 🚑</b>
-                    <div onclick="window.doLogout()" style="background: #2563eb; color: white; padding: 8px 18px; border-radius: 20px; font-size: 10px; font-weight: bold; text-transform: uppercase;">${state.user}</div>
-                </header>
+        window.login = (n) => { window.state.user = n; localStorage.setItem('sosrim_user', n); render(); };
+        window.logout = () => { if(confirm('Sair?')){ localStorage.removeItem('sosrim_user'); location.reload(); }};
+        window.setTab = (t) => { window.state.currentTab = t; render(); };
 
-                <main style="padding-bottom: 120px;">
-                    ${renderTabContent()}
-                </main>
+        const renderMain = (container) => {
+            container.innerHTML = `
+                <div class="min-h-screen pb-32">
+                    <header class="bg-white p-5 shadow-md flex justify-between items-center sticky top-0 z-40">
+                        <h1 class="font-black text-2xl text-blue-900 tracking-tighter uppercase text-center">SOSRIM 🚑</h1>
+                        <div class="flex items-center gap-3">
+                            <span class="bg-blue-600 text-white px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest">${window.state.user}</span>
+                            <button onclick="logout()" class="text-gray-300"><i data-lucide="log-out" class="w-5 h-5"></i></button>
+                        </div>
+                    </header>
 
-                <nav>
-                    ${['Painel', 'Mapa', 'Hosp.', 'Maq.', 'Resumo'].map((label, i) => `
-                        <button class="\({state.tab === (i+1) ? 'active' : ''}" onclick="window.setTab(\){i+1})">${label}</button>
-                    `).join('')}
-                </nav>
+                    <main class="p-4">${renderTabContent()}</main>
 
-                ${state.editingId ? renderEditModal() : ''}
-            `;
-        }
-
-        function renderTabContent() {
-            if(state.tab === 1) {
-                const machines = Object.values(state.machines).sort((a,b) => a.id - b.id);
-                return `
-                    <div class="grid">
-                        ${machines.map(m => `
-                            <div class="card \({m.status}" onclick="window.openEdit('\){m.id}')">
-                                <b style="font-size: 10px; opacity: 0.8;">#${m.id}</b>
-                                <div style="text-align: center;">
-                                    <div style="font-size: 9px; font-weight: bold; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-transform: uppercase;">${m.hospital || 'BASE'}</div>
-                                    <div style="font-size: 26px; font-weight: 900;">${m.time || '--:--'}</div>
-                                </div>
-                            </div>
+                    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 flex justify-around p-4 pb-10 shadow-[0_-10px_30px_rgba(0,0,0,0.08)] z-40">
+                        ${[1, 2, 3, 4, 5].map(t => `
+                            <button onclick="setTab(\({t})" class="flex flex-col items-center p-2 transition-all \){window.state.currentTab === t ? 'text-blue-600 scale-110' : 'text-gray-300'}">
+                                <i data-lucide="\({['grid', 'map', 'hospital', 'list', 'history'][t-1]}" class="\){window.state.currentTab === t ? 'w-7 h-7' : 'w-6 h-6'}"></i>
+                                <span class="text-[8px] font-black uppercase mt-1">${['Início', 'Mapa', 'Hosp', 'Maq', 'Relat'][t-1]}</span>
+                            </button>
                         `).join('')}
-                        ${machines.length === 0 ? '<div style="grid-column: span 3; text-align: center; padding: 50px; color: #cbd5e1; font-weight: bold; font-style: italic;">NENHUMA MÁQUINA</div>' : ''}
-                    </div>
-                `;
-            }
-            if(state.tab === 2) return `<div style="padding: 100px 20px; text-align: center; color: #cbd5e1; font-weight: 900; font-size: 20px; text-transform: uppercase; font-style: italic;">Mapa de Logística<br><span style="font-size: 12px; font-weight: normal;">(Em desenvolvimento)</span></div>`;
-            if(state.tab === 3) return `
-                <div style="padding: 20px;">
-                    <h2 style="text-transform: uppercase; color: #1e3a8a; font-size: 24px;">Hospitais</h2>
-                    <div class="input-group">
-                        <input id="hospName" placeholder="Nome do Hospital">
-                        <button class="btn" onclick="window.addHosp()" style="width: 100%; padding: 18px; background: #2563eb; color: white; margin-top: 10px; font-size: 16px;">Adicionar Hospital</button>
-                    </div>
-                    <div>
-                        ${Object.entries(state.hospitals).map(([id, h]) => `
-                            <div class="list-item">
-                                <b style="text-transform: uppercase;">${h.name}</b>
-                                <button onclick="window.delHosp('${id}')" style="color: #ef4444; border: none; background: none; font-weight: bold; font-size: 12px; text-transform: uppercase;">Apagar</button>
-                            </div>
-                        `).join('')}
-                    </div>
+                    </nav>
                 </div>
+                ${window.state.editingId ? renderModal() : ''}
             `;
-            if(state.tab === 4) return `
-                <div style="padding: 20px;">
-                    <h2 style="text-transform: uppercase; color: #1e3a8a; font-size: 24px;">Máquinas</h2>
-                    <div class="input-group">
-                        <input id="maqId" type="number" placeholder="Número da Máquina">
-                        <button class="btn" onclick="window.addMaq()" style="width: 100%; padding: 18px; background: #2563eb; color: white; margin-top: 10px; font-size: 16px;">Adicionar à Frota</button>
-                    </div>
-                    <div>
-                        ${Object.values(state.machines).sort((a,b)=>a.id-b.id).map(m => `
-                            <div class="list-item">
-                                <b style="text-transform: uppercase;">Máquina #${m.id}</b>
-                                <button onclick="window.delMaq('${m.id}')" style="color: #ef4444; border: none; background: none; font-weight: bold; font-size: 12px; text-transform: uppercase;">Remover</button>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `;
-            if(state.tab === 5) return `
-                <div style="padding: 25px; background: white; min-height: 100vh;">
-                    <h2 style="border-bottom: 8px solid #1e3a8a; padding-bottom: 12px; color: #1e3a8a; font-size: 32px; font-weight: 900; text-transform: uppercase;">Relatório</h2>
-                    <div style="margin-top: 30px;">
-                        ${state.history.slice().reverse().map(h => `
-                            <div style="padding: 20px 0; border-bottom: 2px solid #f1f5f9;">
-                                <div style="display: flex; justify-content: space-between; color: #94a3b8; font-weight: 900; font-size: 12px; text-transform: uppercase; margin-bottom: 5px;">
-                                    <span>\({h.driver}</span><span>\){h.timestamp}</span>
-                                </div>
-                                <p style="font-size: 19px; font-weight: bold; margin: 0; text-transform: uppercase; line-height: 1.3;">
-                                    <span style="color: #2563eb;">\({h.action}:</span> \){h.details}
-                                </p>
-                            </div>
-                        `).join('')}
-                        ${state.history.length === 0 ? '<p style="text-align: center; color: #cbd5e1; font-weight: bold; padding: 50px;">SEM REGISTROS HOJE</p>' : ''}
-                    </div>
-                </div>
-            `;
-        }
+        };
 
-        function renderEditModal() {
-            const m = state.machines[state.editingId];
-            const statuses = [{id:'verde', n:'Base', c:'#22c55e'}, {id:'amarelo', n:'Rua', c:'#facc15'}, {id:'vermelho', n:'Recolher', c:'#ef4444'}, {id:'azul', n:'Saindo', c:'#3b82f6'}, {id:'roxo', n:'Voltando', c:'#a855f7'}];
-            const hosps = Object.values(state.hospitals).map(h => h.name).concat(['BASE']);
-            
+        const renderTabContent = () => {
+            const tab = window.state.currentTab;
+            if (tab === 1) return renderGrid();
+            if (tab === 2) return `<div class="p-20 text-center text-gray-300 font-black uppercase italic">Mapa em breve</div>`;
+            if (tab === 3) return renderHospitals();
+            if (tab === 4) return renderMachines();
+            if (tab === 5) return renderReport();
+        };
+
+        const renderGrid = () => {
+            const machines = Object.values(window.state.machines).sort((a,b) => a.id - b.id);
             return `
-                <div class="modal-overlay">
-                    <div class="modal-content">
-                        <h2 style="margin: 0 0 30px 0; color: #1e3a8a; font-size: 30px; text-decoration: underline italic; font-weight: 900;">MAQ #${m.id}</h2>
+                <div class="grid grid-cols-3 gap-3">
+                    ${machines.map(m => {
+                        const colors = { verde: 'bg-green-500', amarelo: 'bg-yellow-400 text-black', vermelho: 'bg-red-500 pulse-red', azul: 'bg-blue-500', roxo: 'bg-purple-500' };
+                        return `
+                            <div onclick="openEdit('\({m.id}')" class="aspect-square rounded-[25px] p-3 flex flex-col justify-between shadow-lg relative overflow-hidden transition-all active:scale-90 \){colors[m.status] || 'bg-white text-gray-300'}">
+                                <div class="text-[10px] font-black opacity-60">#${m.id}</div>
+                                <div class="flex flex-col items-center justify-center flex-1 text-center">
+                                    <span class="text-[9px] font-black truncate w-full opacity-90 mb-1 uppercase leading-tight">${m.hospital || 'BASE'}</span>
+                                    <span class="text-2xl font-black leading-none tracking-tighter">${m.time || '--:--'}</span>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        };
+
+        const renderHospitals = () => `
+            <div class="space-y-6">
+                <div class="bg-white p-6 rounded-[30px] shadow-xl">
+                    <h2 class="text-xl font-black text-blue-900 mb-4 uppercase">Novo Hospital</h2>
+                    <input id="hName" type="text" placeholder="Nome do Hospital" class="w-full p-5 bg-gray-50 rounded-2xl border-none mb-4 font-bold text-lg">
+                    <button onclick="addHosp()" class="w-full p-5 bg-blue-600 text-white rounded-2xl font-black text-xl uppercase shadow-lg">Cadastrar</button>
+                </div>
+                <div class="space-y-2">
+                    ${Object.entries(window.state.hospitals).map(([id, h]) => `
+                        <div class="bg-white p-5 rounded-2xl flex justify-between items-center shadow-sm">
+                            <span class="font-black text-blue-900 uppercase">${h.name}</span>
+                            <button onclick="delHosp('${id}')" class="text-red-500 font-black text-xs uppercase">Apagar</button>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+
+        const renderMachines = () => `
+            <div class="space-y-6">
+                <div class="bg-white p-6 rounded-[30px] shadow-xl">
+                    <h2 class="text-xl font-black text-blue-900 mb-4 uppercase text-center">Adicionar Máquina</h2>
+                    <input id="mId" type="number" placeholder="Número da Máquina" class="w-full p-5 bg-gray-50 rounded-2xl border-none mb-4 font-bold text-lg text-center">
+                    <button onclick="addMaq()" class="w-full p-5 bg-blue-600 text-white rounded-2xl font-black text-xl uppercase shadow-lg text-center">Adicionar à Frota</button>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    ${Object.values(window.state.machines).sort((a,b)=>a.id-b.id).map(m => `
+                        <div class="bg-white p-5 rounded-2xl flex justify-between items-center shadow-sm">
+                            <span class="font-black text-blue-900">MAQ #${m.id}</span>
+                            <button onclick="delMaq('${m.id}')" class="text-red-400 text-xs uppercase font-black text-center">X</button>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+
+        const renderReport = () => `
+            <div class="bg-white min-h-screen p-8 rounded-[40px] shadow-inner" style="font-family: Arial;">
+                <h2 class="text-4xl font-black text-blue-900 border-b-8 border-blue-900 pb-4 mb-10 uppercase tracking-tighter text-center text-left">Relatório</h2>
+                <div class="space-y-10">
+                    ${window.state.history.slice().reverse().map(l => `
+                        <div class="border-b-2 border-gray-50 pb-8 text-left">
+                            <div class="flex justify-between text-xs font-black text-gray-300 mb-2 uppercase"><span>\({l.driver}</span><span>\){l.timestamp}</span></div>
+                            <p class="text-[18px] font-bold text-gray-900 uppercase leading-tight text-left"><span class="text-blue-600">\({l.action}:</span> \){l.details}</p>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+
+        const renderModal = () => {
+            const m = window.state.machines[window.state.editingId];
+            const opts = [{id:'verde',n:'Base',c:'bg-green-500'},{id:'amarelo',n:'Rua',c:'bg-yellow-400 text-black'},{id:'vermelho',n:'Recolher',c:'bg-red-500 text-white'},{id:'azul',n:'Saindo',c:'bg-blue-500'},{id:'roxo',n:'Voltando',c:'bg-purple-500'}];
+            const hosps = Object.values(window.state.hospitals).map(h => h.name).concat(['BASE']);
+
+            return `
+                <div class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-end">
+                    <div class="bg-white w-full rounded-t-[50px] p-8 animate-up max-h-[90vh] overflow-y-auto pb-20">
+                        <div class="w-16 h-1.5 bg-gray-100 rounded-full mx-auto mb-8"></div>
+                        <h2 class="text-3xl font-black text-blue-900 mb-8 uppercase italic underline text-center">Máquina #${m.id}</h2>
                         
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 30px;">
-                            ${statuses.map(s => `
-                                <button onclick="window.setTempStatus('\({s.id}')" style="padding: 18px; border-radius: 20px; border: 4px solid \){state.tempStatus === s.id ? '#2563eb' : '#f8fafc'}; background: white; display: flex; align-items: center; gap: 12px; font-weight: 900; font-size: 11px;">
-                                    <div style="width: 14px; height: 14px; border-radius: 50%; background: \({s.c}"></div> \){s.n.toUpperCase()}
+                        <div class="grid grid-cols-2 gap-3 mb-8">
+                            ${opts.map(o => `
+                                <button onclick="setTempStatus('\({o.id}')" class="flex items-center gap-3 p-4 rounded-3xl border-4 transition-all \){window.state.tempStatus === o.id ? 'border-blue-600 bg-blue-50' : 'border-gray-50 bg-white'}">
+                                    <div class="w-4 h-4 rounded-full ${o.c}"></div>
+                                    <span class="font-black text-[10px] uppercase">${o.n}</span>
                                 </button>
                             `).join('')}
                         </div>
 
-                        <div style="overflow-x: auto; white-space: nowrap; padding: 15px 0; margin-bottom: 30px; background: #f8fafc; border-radius: 25px;">
+                        <div class="flex gap-2 overflow-x-auto pb-6 mb-8 scrollbar-hide">
                             ${hosps.map(h => `
-                                <button onclick="window.setTempHosp('\({h}')" style="display: inline-block; padding: 18px 30px; border-radius: 20px; margin: 0 5px; border: 3px solid \){state.tempHosp === h ? '#2563eb' : 'transparent'}; background: \({state.tempHosp === h ? '#2563eb' : 'white'}; color: \){state.tempHosp === h ? 'white' : '#64748b'}; font-weight: 900; font-size: 12px; text-transform: uppercase; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">${h}</button>
+                                <button onclick="setTempHosp('\({h}')" class="px-8 py-5 rounded-2xl font-black text-[11px] uppercase whitespace-nowrap border-4 transition-all \){window.state.tempHosp === h ? 'bg-blue-600 text-white border-blue-600 shadow-xl' : 'bg-gray-50 text-gray-400 border-transparent'}">${h}</button>
                             `).join('')}
                         </div>
 
-                        <input id="timeIn" type="time" value="${state.tempTime}" style="width: 100%; padding: 25px; border-radius: 30px; border: none; background: #f1f5f9; font-size: 55px; font-weight: 900; text-align: center; color: #1e3a8a; margin-bottom: 40px;">
+                        <input id="tTime" type="time" value="${window.state.tempTime}" class="w-full p-8 bg-gray-50 rounded-[35px] font-black text-6xl text-center text-blue-900 border-none mb-10">
 
-                        <div style="display: flex; gap: 15px;">
-                            <button onclick="window.closeEdit()" style="flex: 1; border: none; background: none; color: #94a3b8; font-weight: bold; text-transform: uppercase; font-size: 14px;">Voltar</button>
-                            <button onclick="window.saveEdit()" class="btn" style="flex: 2; padding: 25px; background: #2563eb; color: white; font-size: 22px; font-weight: 900; shadow: 0 10px 25px rgba(37,99,235,0.3);">SALVAR OK</button>
+                        <div class="flex gap-4">
+                            <button onclick="closeEdit()" class="flex-1 font-black text-gray-300 uppercase tracking-widest">Voltar</button>
+                            <button onclick="saveEdit()" class="flex-[3] p-7 bg-blue-600 text-white rounded-[35px] font-black text-2xl shadow-2xl uppercase shadow-blue-200">Salvar Ok</button>
                         </div>
                     </div>
                 </div>
             `;
-        }
-
-        // Funções de Ação
-        window.doLogin = (u) => { state.user = u; localStorage.setItem('sosrim_user', u); render(); };
-        window.doLogout = () => { if(confirm('Sair do sistema?')) { localStorage.removeItem('sosrim_user'); location.reload(); }};
-        window.setTab = (t) => { state.tab = t; render(); };
-        window.openEdit = (id) => { const m = state.machines[id]; state.editingId = id; state.tempStatus = m.status; state.tempHosp = m.hospital; state.tempTime = m.time || '00:00'; render(); };
-        window.closeEdit = () => { state.editingId = null; render(); };
-        window.setTempStatus = (s) => { state.tempStatus = s; render(); };
-        window.setTempHosp = (h) => { state.tempHosp = h; render(); };
-        window.saveEdit = () => {
-            const time = document.getElementById('timeIn').value;
-            update(ref(db, `machines/${state.editingId}`), { status: state.tempStatus, hospital: state.tempHosp, time: time });
-            push(ref(db, 'history'), { driver: state.user, timestamp: new Date().toLocaleTimeString('pt-BR'), action: "MÁQUINA", details: `MAQ#\({state.editingId} EM \){state.tempHosp} (${state.tempStatus.toUpperCase()})` });
-            state.editingId = null; render();
         };
-        window.addHosp = () => { const n = document.getElementById('hospName').value; if(n) { push(ref(db, 'hospitals'), { name: n }); document.getElementById('hospName').value = ''; }};
+
+        window.openEdit = (id) => { const m = window.state.machines[id]; window.state.editingId = id; window.state.tempStatus = m.status; window.state.tempHosp = m.hospital; window.state.tempTime = m.time || '00:00'; render(); };
+        window.closeEdit = () => { window.state.editingId = null; render(); };
+        window.setTempStatus = (s) => { window.state.tempStatus = s; render(); };
+        window.setTempHosp = (h) => { window.state.tempHosp = h; render(); };
+        window.saveEdit = () => {
+            const time = document.getElementById('tTime').value;
+            update(ref(db, `machines/${window.state.editingId}`), { status: window.state.tempStatus, hospital: window.state.tempHosp, time: time });
+            push(ref(db, 'history'), { driver: window.state.user, timestamp: new Date().toLocaleTimeString('pt-BR'), action: "MÁQUINA", details: `MAQ#\({window.state.editingId} EM \){window.state.tempHosp} (${window.state.tempStatus.toUpperCase()})` });
+            window.state.editingId = null; render();
+        };
+        window.addHosp = () => { const n = document.getElementById('hName').value; if(n){ push(ref(db, 'hospitals'), { name: n }); document.getElementById('hName').value=''; }};
         window.delHosp = (id) => { if(confirm('Apagar hospital?')) remove(ref(db, `hospitals/${id}`)); };
-        window.addMaq = () => { const id = document.getElementById('maqId').value; if(id) { set(ref(db, `machines/${id}`), { id: id, status: 'verde', hospital: 'BASE', time: '00:00' }); document.getElementById('maqId').value = ''; }};
+        window.addMaq = () => { const id = document.getElementById('mId').value; if(id){ set(ref(db, `machines/${id}`), { id: id, status: 'verde', hospital: 'BASE', time: '00:00' }); document.getElementById('mId').value=''; }};
         window.delMaq = (id) => { if(confirm('Remover máquina?')) remove(ref(db, `machines/${id}`)); };
 
-        // Sincronização em Tempo Real
-        onValue(ref(db, 'machines'), (snap) => { state.machines = snap.val() || {}; render(); });
-        onValue(ref(db, 'hospitals'), (snap) => { state.hospitals = snap.val() || {}; render(); });
-        onValue(ref(db, 'history'), (snap) => { state.history = Object.values(snap.val() || {}); render(); });
+        onValue(ref(db, 'machines'), (snap) => { window.state.machines = snap.val() || {}; render(); });
+        onValue(ref(db, 'hospitals'), (snap) => { window.state.hospitals = snap.val() || {}; render(); });
+        onValue(ref(db, 'history'), (snap) => { window.state.history = Object.values(snap.val() || {}); render(); });
+        window.onload = render;
     </script>
 </body>
 </html>
