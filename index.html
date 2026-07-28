@@ -4,17 +4,65 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SOSRIM</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        body { font-family: 'Arial', sans-serif; -webkit-tap-highlight-color: transparent; }
-        .pulse-red { animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
-        .animate-up { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
-        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        /* CSS PURO - SEM DEPENDÊNCIAS EXTERNAS */
+        :root {
+            --blue: #2563eb; --blue-dark: #1e3a8a;
+            --green: #22c55e; --yellow: #facc15; --red: #ef4444; --purple: #a855f7;
+            --bg: #f8fafc; --white: #ffffff; --gray: #94a3b8;
+        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; font-family: Arial, sans-serif; background: var(--bg); color: var(--blue-dark); overflow-x: hidden; }
+        
+        /* Cabeçalho */
+        header { background: var(--white); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
+        .logo { font-size: 24px; font-weight: 900; letter-spacing: -1px; }
+        .user-badge { background: var(--blue); color: white; padding: 5px 12px; border-radius: 20px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
+
+        /* Grid de 3 Colunas */
+        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 12px; }
+        .card { aspect-ratio: 1/1; border-radius: 18px; padding: 10px; display: flex; flex-direction: column; justify-content: space-between; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); color: white; font-weight: bold; cursor: pointer; border: none; }
+        .card .id { font-size: 10px; opacity: 0.7; text-align: left; }
+        .card .hosp { font-size: 9px; text-transform: uppercase; white-space: nowrap; overflow: hidden; margin-bottom: 2px; }
+        .card .time { font-size: 26px; font-weight: 900; letter-spacing: -1px; }
+
+        /* Cores dos Status */
+        .verde { background: var(--green); }
+        .amarelo { background: var(--yellow); color: black; }
+        .vermelho { background: var(--red); animation: pulse 1.5s infinite; }
+        .azul { background: var(--blue); }
+        .roxo { background: var(--purple); }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+
+        /* Navegação Inferior */
+        nav { position: fixed; bottom: 0; width: 100%; background: var(--white); display: flex; justify-content: space-around; padding: 10px 0 30px 0; border-top: 1px solid #eee; box-shadow: 0 -5px 15px rgba(0,0,0,0.05); z-index: 100; }
+        nav button { border: none; background: none; color: var(--gray); font-weight: bold; font-size: 9px; text-transform: uppercase; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        nav button.active { color: var(--blue); transform: scale(1.1); }
+        .nav-icon { font-size: 20px; }
+
+        /* Modais e Formulários */
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; align-items: flex-end; z-index: 200; }
+        .modal-content { background: white; width: 100%; border-radius: 30px 30px 0 0; padding: 25px; max-height: 90vh; overflow-y: auto; text-align: center; }
+        .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0; }
+        .btn-opt { padding: 15px; border-radius: 15px; border: 2px solid #eee; background: white; font-weight: bold; font-size: 11px; display: flex; align-items: center; gap: 8px; }
+        .btn-opt.active { border-color: var(--blue); background: #eff6ff; }
+        .circle { width: 12px; height: 12px; border-radius: 50%; }
+        
+        .hosp-scroll { display: flex; overflow-x: auto; gap: 8px; padding: 10px 0; margin-bottom: 20px; }
+        .hosp-btn { padding: 12px 20px; background: #f1f5f9; border-radius: 12px; border: 2px solid transparent; font-weight: bold; font-size: 11px; white-space: nowrap; }
+        .hosp-btn.active { background: var(--blue); color: white; }
+
+        input { width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #ddd; margin-bottom: 10px; font-size: 16px; font-weight: bold; text-align: center; }
+        .btn-main { width: 100%; padding: 20px; background: var(--blue); color: white; border: none; border-radius: 15px; font-weight: 900; font-size: 18px; text-transform: uppercase; }
+
+        /* Relatório */
+        .report-page { padding: 20px; background: white; min-height: 100vh; }
+        .report-item { border-bottom: 1px solid #eee; padding: 15px 0; }
+        .report-meta { font-size: 10px; font-weight: bold; color: var(--gray); display: flex; justify-content: space-between; margin-bottom: 4px; }
+        .report-text { font-size: 18px; font-weight: bold; text-transform: uppercase; margin: 0; }
     </style>
 </head>
-<body class="bg-gray-100 overscroll-none">
+<body>
     <div id="app"></div>
 
     <script type="module">
@@ -23,7 +71,6 @@
 
         const firebaseConfig = {
             apiKey: "AIzaSyB_REPLACE_WITH_REAL_KEY",
-            authDomain: "sosrim-592ab.firebaseapp.com",
             databaseURL: "https://sosrim-592ab-default-rtdb.firebaseio.com",
             projectId: "sosrim-592ab"
         };
@@ -31,206 +78,146 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        window.state = {
+        let state = {
             user: localStorage.getItem('sosrim_user') || null,
-            machines: {},
-            hospitals: {},
-            history: [],
-            currentTab: 1,
-            editingId: null,
-            tempStatus: '', tempHosp: '', tempTime: ''
+            machines: {}, hospitals: {}, history: [],
+            tab: 1, editingId: null,
+            tStatus: '', tHosp: '', tTime: ''
         };
 
-        const render = () => {
-            const appDiv = document.getElementById('app');
-            if (!window.state.user) { renderLogin(appDiv); return; }
-            renderMain(appDiv);
-            if (window.lucide) lucide.createIcons();
-        };
-
-        const renderLogin = (container) => {
-            container.innerHTML = `
-                <div class="min-h-screen flex items-center justify-center p-6 bg-slate-50">
-                    <div class="bg-white p-10 rounded-[40px] shadow-2xl w-full max-w-md text-center border-t-[12px] border-blue-600">
-                        <h1 class="text-5xl font-black text-blue-900 mb-2 tracking-tighter uppercase">SOSRIM</h1>
-                        <p class="text-gray-400 mb-10 font-bold tracking-widest uppercase text-sm italic text-center">Logística</p>
-                        <div class="space-y-4">
-                            ${['Sergio', 'Aderildo', 'Jairo'].map(name => `
-                                <button onclick="login('${name}')" class="w-full py-6 bg-blue-600 text-white rounded-3xl font-black text-2xl shadow-lg active:scale-95 transition-all uppercase">
-                                    ${name}
-                                </button>
+        function render() {
+            const root = document.getElementById('app');
+            if (!state.user) {
+                root.innerHTML = `
+                    <div style="height:100vh; display:flex; align-items:center; justify-content:center; padding:20px;">
+                        <div style="background:white; padding:40px; border-radius:35px; width:100%; max-width:400px; text-align:center; border-top:10px solid var(--blue); box-shadow:0 15px 35px rgba(0,0,0,0.1);">
+                            <h1 style="margin:0; font-size:40px; font-weight:900;">SOSRIM</h1>
+                            <p style="color:var(--gray); font-weight:bold; margin-bottom:30px;">LOGÍSTICA</p>
+                            ${['Sergio', 'Aderildo', 'Jairo'].map(n => `
+                                <button onclick="window.doLogin('\({n}')" class="btn-main" style="margin-bottom:10px; padding:15px;">\){n}</button>
                             `).join('')}
                         </div>
-                    </div>
-                </div>
+                    </div>`;
+                return;
+            }
+
+            root.innerHTML = `
+                <header>
+                    <div class="logo">SOSRIM 🚑</div>
+                    <div class="user-badge" onclick="window.doLogout()">${state.user}</div>
+                </header>
+
+                <main style="padding-bottom:100px;">
+                    ${renderTab()}
+                </main>
+
+                <nav>
+                    <button onclick="window.setTab(1)" class="${state.tab===1?'active':''}"><span class="nav-icon">📊</span>Início</button>
+                    <button onclick="window.setTab(2)" class="${state.tab===2?'active':''}"><span class="nav-icon">📍</span>Mapa</button>
+                    <button onclick="window.setTab(3)" class="${state.tab===3?'active':''}"><span class="nav-icon">🏥</span>Hosp</button>
+                    <button onclick="window.setTab(4)" class="${state.tab===4?'active':''}"><span class="nav-icon">🚜</span>Maq</button>
+                    <button onclick="window.setTab(5)" class="${state.tab===5?'active':''}"><span class="nav-icon">📋</span>Relat</button>
+                </nav>
+
+                ${state.editingId ? renderModal() : ''}
             `;
-        };
+        }
 
-        window.login = (n) => { window.state.user = n; localStorage.setItem('sosrim_user', n); render(); };
-        window.logout = () => { if(confirm('Sair?')){ localStorage.removeItem('sosrim_user'); location.reload(); }};
-        window.setTab = (t) => { window.state.currentTab = t; render(); };
-
-        const renderMain = (container) => {
-            container.innerHTML = `
-                <div class="min-h-screen pb-32">
-                    <header class="bg-white p-5 shadow-md flex justify-between items-center sticky top-0 z-40">
-                        <h1 class="font-black text-2xl text-blue-900 tracking-tighter uppercase text-center">SOSRIM 🚑</h1>
-                        <div class="flex items-center gap-3">
-                            <span class="bg-blue-600 text-white px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest">${window.state.user}</span>
-                            <button onclick="logout()" class="text-gray-300"><i data-lucide="log-out" class="w-5 h-5"></i></button>
+        function renderTab() {
+            if (state.tab === 1) {
+                const maqs = Object.values(state.machines).sort((a,b) => a.id - b.id);
+                return `<div class="grid">${maqs.map(m => `
+                    <div class="card \({m.status}" onclick="window.openEdit('\){m.id}')">
+                        <div class="id">#${m.id}</div>
+                        <div>
+                            <div class="hosp">${m.hospital || 'BASE'}</div>
+                            <div class="time">${m.time || '--:--'}</div>
                         </div>
-                    </header>
+                    </div>`).join('')}</div>`;
+            }
+            if (state.tab === 3) return renderHospTab();
+            if (state.tab === 4) return renderMaqTab();
+            if (state.tab === 5) return renderReportTab();
+            return `<div style="padding:100px 20px; text-align:center; color:var(--gray); font-weight:bold;">EM BREVE</div>`;
+        }
 
-                    <main class="p-4">${renderTabContent()}</main>
-
-                    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 flex justify-around p-4 pb-10 shadow-[0_-10px_30px_rgba(0,0,0,0.08)] z-40">
-                        ${[1, 2, 3, 4, 5].map(t => `
-                            <button onclick="setTab(\({t})" class="flex flex-col items-center p-2 transition-all \){window.state.currentTab === t ? 'text-blue-600 scale-110' : 'text-gray-300'}">
-                                <i data-lucide="\({['grid', 'map', 'hospital', 'list', 'history'][t-1]}" class="\){window.state.currentTab === t ? 'w-7 h-7' : 'w-6 h-6'}"></i>
-                                <span class="text-[8px] font-black uppercase mt-1">${['Início', 'Mapa', 'Hosp', 'Maq', 'Relat'][t-1]}</span>
-                            </button>
-                        `).join('')}
-                    </nav>
+        function renderHospTab() {
+            return `<div style="padding:20px;">
+                <h2 style="text-transform:uppercase;">Hospitais</h2>
+                <input id="hName" placeholder="Nome do Hospital">
+                <button onclick="window.addHosp()" class="btn-main" style="padding:15px; font-size:14px;">Adicionar</button>
+                <div style="margin-top:20px;">
+                    \({Object.entries(state.hospitals).map(([id, h]) => `<div style="background:white; padding:15px; border-radius:12px; margin-bottom:5px; display:flex; justify-content:space-between;"><b>\){h.name}</b><span onclick="window.delHosp('${id}')" style="color:red; font-weight:bold;">X</span></div>`).join('')}
                 </div>
-                ${window.state.editingId ? renderModal() : ''}
-            `;
-        };
+            </div>`;
+        }
 
-        const renderTabContent = () => {
-            const tab = window.state.currentTab;
-            if (tab === 1) return renderGrid();
-            if (tab === 2) return `<div class="p-20 text-center text-gray-300 font-black uppercase italic">Mapa em breve</div>`;
-            if (tab === 3) return renderHospitals();
-            if (tab === 4) return renderMachines();
-            if (tab === 5) return renderReport();
-        };
-
-        const renderGrid = () => {
-            const machines = Object.values(window.state.machines).sort((a,b) => a.id - b.id);
-            return `
-                <div class="grid grid-cols-3 gap-3">
-                    ${machines.map(m => {
-                        const colors = { verde: 'bg-green-500', amarelo: 'bg-yellow-400 text-black', vermelho: 'bg-red-500 pulse-red', azul: 'bg-blue-500', roxo: 'bg-purple-500' };
-                        return `
-                            <div onclick="openEdit('\({m.id}')" class="aspect-square rounded-[25px] p-3 flex flex-col justify-between shadow-lg relative overflow-hidden transition-all active:scale-90 \){colors[m.status] || 'bg-white text-gray-300'}">
-                                <div class="text-[10px] font-black opacity-60">#${m.id}</div>
-                                <div class="flex flex-col items-center justify-center flex-1 text-center">
-                                    <span class="text-[9px] font-black truncate w-full opacity-90 mb-1 uppercase leading-tight">${m.hospital || 'BASE'}</span>
-                                    <span class="text-2xl font-black leading-none tracking-tighter">${m.time || '--:--'}</span>
-                                </div>
-                            </div>
-                        `;
-                    }).join('')}
+        function renderMaqTab() {
+            return `<div style="padding:20px;">
+                <h2 style="text-transform:uppercase;">Máquinas</h2>
+                <input id="mId" type="number" placeholder="Nº Máquina">
+                <button onclick="window.addMaq()" class="btn-main" style="padding:15px; font-size:14px;">Adicionar</button>
+                <div class="grid" style="margin-top:20px;">
+                    \({Object.values(state.machines).sort((a,b)=>a.id-b.id).map(m => `<div style="background:white; padding:15px; border-radius:12px; text-align:center; position:relative;"><b>#\){m.id}</b><div onclick="window.delMaq('${m.id}')" style="position:absolute; top:2px; right:5px; color:red; font-size:10px;">X</div></div>`).join('')}
                 </div>
-            `;
-        };
+            </div>`;
+        }
 
-        const renderHospitals = () => `
-            <div class="space-y-6">
-                <div class="bg-white p-6 rounded-[30px] shadow-xl">
-                    <h2 class="text-xl font-black text-blue-900 mb-4 uppercase">Novo Hospital</h2>
-                    <input id="hName" type="text" placeholder="Nome do Hospital" class="w-full p-5 bg-gray-50 rounded-2xl border-none mb-4 font-bold text-lg">
-                    <button onclick="addHosp()" class="w-full p-5 bg-blue-600 text-white rounded-2xl font-black text-xl uppercase shadow-lg">Cadastrar</button>
+        function renderReportTab() {
+            return `<div class="report-page">
+                <h2 style="border-bottom:5px solid black; padding-bottom:10px; font-size:28px;">RELATÓRIO</h2>
+                ${state.history.slice().reverse().map(h => `
+                    <div class="report-item">
+                        <div class="report-meta"><span>\({h.driver}</span><span>\){h.timestamp}</span></div>
+                        <p class="report-text"><span style="color:var(--blue);">\({h.action}:</span> \){h.details}</p>
+                    </div>`).join('')}
+            </div>`;
+        }
+
+        function renderModal() {
+            const m = state.machines[state.editingId];
+            const opts = [{id:'verde',n:'Base',c:'var(--green)'},{id:'amarelo',n:'Rua',c:'var(--yellow)'},{id:'vermelho',n:'Recolher',c:'var(--red)'},{id:'azul',n:'Saindo',c:'var(--blue)'},{id:'roxo',n:'Voltando',c:'var(--purple)'}];
+            const hosps = Object.values(state.hospitals).map(h => h.name).concat(['BASE']);
+
+            return `<div class="modal"><div class="modal-content">
+                <h2 style="margin:0; font-size:24px; font-weight:900;">MAQ #${m.id}</h2>
+                <div class="status-grid">${opts.map(o => `
+                    <div onclick="window.setTS('\({o.id}')" class="btn-opt \){state.tStatus===o.id?'active':''}">
+                        <div class="circle" style="background:\({o.c}"></div>\){o.n.toUpperCase()}
+                    </div>`).join('')}</div>
+                <div class="hosp-scroll">${hosps.map(h => `
+                    <div onclick="window.setTH('\({h}')" class="hosp-btn \){state.tHosp===h?'active':''}">${h}</div>`).join('')}</div>
+                <input id="tTime" type="time" value="${state.tTime}" style="font-size:40px; height:80px; background:#f1f5f9; border:none; margin-bottom:20px;">
+                <div style="display:flex; gap:10px;">
+                    <button onclick="window.closeEdit()" style="flex:1; border:none; background:none; font-weight:bold; color:var(--gray);">VOLTAR</button>
+                    <button onclick="window.saveEdit()" class="btn-main" style="flex:2;">SALVAR OK</button>
                 </div>
-                <div class="space-y-2">
-                    ${Object.entries(window.state.hospitals).map(([id, h]) => `
-                        <div class="bg-white p-5 rounded-2xl flex justify-between items-center shadow-sm">
-                            <span class="font-black text-blue-900 uppercase">${h.name}</span>
-                            <button onclick="delHosp('${id}')" class="text-red-500 font-black text-xs uppercase">Apagar</button>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-        `;
+            </div></div>`;
+        }
 
-        const renderMachines = () => `
-            <div class="space-y-6">
-                <div class="bg-white p-6 rounded-[30px] shadow-xl">
-                    <h2 class="text-xl font-black text-blue-900 mb-4 uppercase text-center">Adicionar Máquina</h2>
-                    <input id="mId" type="number" placeholder="Número da Máquina" class="w-full p-5 bg-gray-50 rounded-2xl border-none mb-4 font-bold text-lg text-center">
-                    <button onclick="addMaq()" class="w-full p-5 bg-blue-600 text-white rounded-2xl font-black text-xl uppercase shadow-lg text-center">Adicionar à Frota</button>
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                    ${Object.values(window.state.machines).sort((a,b)=>a.id-b.id).map(m => `
-                        <div class="bg-white p-5 rounded-2xl flex justify-between items-center shadow-sm">
-                            <span class="font-black text-blue-900">MAQ #${m.id}</span>
-                            <button onclick="delMaq('${m.id}')" class="text-red-400 text-xs uppercase font-black text-center">X</button>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-        `;
-
-        const renderReport = () => `
-            <div class="bg-white min-h-screen p-8 rounded-[40px] shadow-inner" style="font-family: Arial;">
-                <h2 class="text-4xl font-black text-blue-900 border-b-8 border-blue-900 pb-4 mb-10 uppercase tracking-tighter text-center text-left">Relatório</h2>
-                <div class="space-y-10">
-                    ${window.state.history.slice().reverse().map(l => `
-                        <div class="border-b-2 border-gray-50 pb-8 text-left">
-                            <div class="flex justify-between text-xs font-black text-gray-300 mb-2 uppercase"><span>\({l.driver}</span><span>\){l.timestamp}</span></div>
-                            <p class="text-[18px] font-bold text-gray-900 uppercase leading-tight text-left"><span class="text-blue-600">\({l.action}:</span> \){l.details}</p>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-        `;
-
-        const renderModal = () => {
-            const m = window.state.machines[window.state.editingId];
-            const opts = [{id:'verde',n:'Base',c:'bg-green-500'},{id:'amarelo',n:'Rua',c:'bg-yellow-400 text-black'},{id:'vermelho',n:'Recolher',c:'bg-red-500 text-white'},{id:'azul',n:'Saindo',c:'bg-blue-500'},{id:'roxo',n:'Voltando',c:'bg-purple-500'}];
-            const hosps = Object.values(window.state.hospitals).map(h => h.name).concat(['BASE']);
-
-            return `
-                <div class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-end">
-                    <div class="bg-white w-full rounded-t-[50px] p-8 animate-up max-h-[90vh] overflow-y-auto pb-20">
-                        <div class="w-16 h-1.5 bg-gray-100 rounded-full mx-auto mb-8"></div>
-                        <h2 class="text-3xl font-black text-blue-900 mb-8 uppercase italic underline text-center">Máquina #${m.id}</h2>
-                        
-                        <div class="grid grid-cols-2 gap-3 mb-8">
-                            ${opts.map(o => `
-                                <button onclick="setTempStatus('\({o.id}')" class="flex items-center gap-3 p-4 rounded-3xl border-4 transition-all \){window.state.tempStatus === o.id ? 'border-blue-600 bg-blue-50' : 'border-gray-50 bg-white'}">
-                                    <div class="w-4 h-4 rounded-full ${o.c}"></div>
-                                    <span class="font-black text-[10px] uppercase">${o.n}</span>
-                                </button>
-                            `).join('')}
-                        </div>
-
-                        <div class="flex gap-2 overflow-x-auto pb-6 mb-8 scrollbar-hide">
-                            ${hosps.map(h => `
-                                <button onclick="setTempHosp('\({h}')" class="px-8 py-5 rounded-2xl font-black text-[11px] uppercase whitespace-nowrap border-4 transition-all \){window.state.tempHosp === h ? 'bg-blue-600 text-white border-blue-600 shadow-xl' : 'bg-gray-50 text-gray-400 border-transparent'}">${h}</button>
-                            `).join('')}
-                        </div>
-
-                        <input id="tTime" type="time" value="${window.state.tempTime}" class="w-full p-8 bg-gray-50 rounded-[35px] font-black text-6xl text-center text-blue-900 border-none mb-10">
-
-                        <div class="flex gap-4">
-                            <button onclick="closeEdit()" class="flex-1 font-black text-gray-300 uppercase tracking-widest">Voltar</button>
-                            <button onclick="saveEdit()" class="flex-[3] p-7 bg-blue-600 text-white rounded-[35px] font-black text-2xl shadow-2xl uppercase shadow-blue-200">Salvar Ok</button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        };
-
-        window.openEdit = (id) => { const m = window.state.machines[id]; window.state.editingId = id; window.state.tempStatus = m.status; window.state.tempHosp = m.hospital; window.state.tempTime = m.time || '00:00'; render(); };
-        window.closeEdit = () => { window.state.editingId = null; render(); };
-        window.setTempStatus = (s) => { window.state.tempStatus = s; render(); };
-        window.setTempHosp = (h) => { window.state.tempHosp = h; render(); };
+        // Funções Globais
+        window.doLogin = (u) => { state.user = u; localStorage.setItem('sosrim_user', u); render(); };
+        window.doLogout = () => { if(confirm('Sair?')){ localStorage.removeItem('sosrim_user'); location.reload(); }};
+        window.setTab = (t) => { state.tab = t; render(); };
+        window.openEdit = (id) => { const m = state.machines[id]; state.editingId = id; state.tStatus = m.status; state.tHosp = m.hospital; state.tTime = m.time || '00:00'; render(); };
+        window.closeEdit = () => { state.editingId = null; render(); };
+        window.setTS = (s) => { state.tStatus = s; render(); };
+        window.setTH = (h) => { state.tHosp = h; render(); };
         window.saveEdit = () => {
             const time = document.getElementById('tTime').value;
-            update(ref(db, `machines/${window.state.editingId}`), { status: window.state.tempStatus, hospital: window.state.tempHosp, time: time });
-            push(ref(db, 'history'), { driver: window.state.user, timestamp: new Date().toLocaleTimeString('pt-BR'), action: "MÁQUINA", details: `MAQ#\({window.state.editingId} EM \){window.state.tempHosp} (${window.state.tempStatus.toUpperCase()})` });
-            window.state.editingId = null; render();
+            update(ref(db, `machines/${state.editingId}`), { status: state.tStatus, hospital: state.tHosp, time: time });
+            push(ref(db, 'history'), { driver: state.user, timestamp: new Date().toLocaleTimeString('pt-BR'), action: "MÁQUINA", details: `MAQ#\({state.editingId} EM \){state.tHosp} (${state.tStatus.toUpperCase()})` });
+            state.editingId = null; render();
         };
         window.addHosp = () => { const n = document.getElementById('hName').value; if(n){ push(ref(db, 'hospitals'), { name: n }); document.getElementById('hName').value=''; }};
-        window.delHosp = (id) => { if(confirm('Apagar hospital?')) remove(ref(db, `hospitals/${id}`)); };
+        window.delHosp = (id) => { if(confirm('Apagar?')) remove(ref(db, `hospitals/${id}`)); };
         window.addMaq = () => { const id = document.getElementById('mId').value; if(id){ set(ref(db, `machines/${id}`), { id: id, status: 'verde', hospital: 'BASE', time: '00:00' }); document.getElementById('mId').value=''; }};
-        window.delMaq = (id) => { if(confirm('Remover máquina?')) remove(ref(db, `machines/${id}`)); };
+        window.delMaq = (id) => { if(confirm('Remover?')) remove(ref(db, `machines/${id}`)); };
 
-        onValue(ref(db, 'machines'), (snap) => { window.state.machines = snap.val() || {}; render(); });
-        onValue(ref(db, 'hospitals'), (snap) => { window.state.hospitals = snap.val() || {}; render(); });
-        onValue(ref(db, 'history'), (snap) => { window.state.history = Object.values(snap.val() || {}); render(); });
-        window.onload = render;
+        // Firebase Sync
+        onValue(ref(db, 'machines'), (s) => { state.machines = s.val() || {}; render(); });
+        onValue(ref(db, 'hospitals'), (s) => { state.hospitals = s.val() || {}; render(); });
+        onValue(ref(db, 'history'), (s) => { state.history = Object.values(s.val() || {}); render(); });
     </script>
 </body>
 </html>
