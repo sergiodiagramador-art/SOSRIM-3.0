@@ -3,102 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SOSRIM PRO</title>
+    <title>SOSRIM INTELLIGENT</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/8.10.0/firebase.js"></script>
     <style>
         :root { --blue: #2563eb; --green: #22c55e; --yellow: #facc15; --red: #ef4444; --purple: #a855f7; }
-        body { margin: 0; font-family: sans-serif; background: #f1f5f9; color: #1e3a8a; padding-bottom: 100px; }
+        body { margin: 0; font-family: sans-serif; background: #f1f5f9; color: #1e3a8a; padding-bottom: 120px; }
         header { background: #fff; padding: 15px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
         
-        /* GRID 3 COLUNAS */
         .grid { display: block; padding: 5px; overflow: hidden; }
-        .card { width: 30%; aspect-ratio: 1/1; float: left; margin: 1.5%; border-radius: 15px; color: white; text-align: center; font-weight: bold; padding: 5px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-around; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: none; }
+        .card { width: 30%; aspect-ratio: 1/1; float: left; margin: 1.5%; border-radius: 15px; color: white; text-align: center; font-weight: bold; padding: 5px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-around; position: relative; }
         
         .verde { background: var(--green); } .amarelo { background: var(--yellow); color: black; } 
         .vermelho { background: var(--red); animation: pulse 1.5s infinite; }
         .azul { background: var(--blue); } .roxo { background: var(--purple); }
         @keyframes pulse { 50% { opacity: 0.6; } }
 
-        .time { font-size: 20px; font-weight: 900; }
-        .hosp-name { font-size: 8px; text-transform: uppercase; opacity: 0.9; }
+        .btn-pin { position: absolute; top: 2px; right: 2px; background: white; color: black; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; display: flex; align-items: center; justify-content: center; text-decoration: none; border: 1px solid #ccc; }
 
-        /* NAVEGAÇÃO 5 ABAS */
-        nav { position: fixed; bottom: 0; width: 100%; background: #fff; display: flex; padding: 10px 0 30px 0; border-top: 1px solid #ddd; z-index: 100; }
+        nav { position: fixed; bottom: 0; width: 100%; background: #fff; display: flex; padding: 10px 0 35px 0; border-top: 1px solid #ddd; z-index: 100; }
         nav button { flex: 1; border: none; background: none; font-weight: bold; color: #64748b; font-size: 9px; }
         nav .active { color: var(--blue); transform: scale(1.1); }
 
-        /* FORMULÁRIOS */
-        .page { padding: 20px; display: none; }
+        .page { display: none; padding: 20px; }
         .page.active { display: block; }
         input { width: 100%; padding: 15px; margin: 10px 0; border-radius: 10px; border: 1px solid #ccc; font-size: 16px; box-sizing: border-box; }
-        .btn-blue { width: 100%; padding: 15px; background: var(--blue); color: white; border: none; border-radius: 10px; font-weight: bold; margin-top: 5px; }
+        .btn { width: 100%; padding: 15px; background: var(--blue); color: white; border: none; border-radius: 10px; font-weight: bold; margin-bottom: 10px; }
         
-        /* MODAL */
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: flex; align-items: flex-end; z-index: 200; }
-        .modal-content { background: white; width: 100%; border-radius: 30px 30px 0 0; padding: 25px; text-align: center; max-height: 80vh; overflow-y: auto; }
+        .modal-content { background: white; width: 100%; border-radius: 30px 30px 0 0; padding: 25px; text-align: center; }
     </style>
 </head>
 <body>
     <div id="app">
         <header><span>SOSRIM 🚑</span><span id="user-display">---</span></header>
         
-        <!-- ABA 1: PAINEL PRINCIPAL -->
-        <div id="tab1" class="page active"><div id="grid-maquinas" class="grid"></div></div>
-
-        <!-- ABA 2: GPS E MATERIAIS -->
-        <div id="tab2" class="page">
-            <h2>GPS e Materiais</h2>
-            <div style="background:white; padding:20px; border-radius:15px;">
-                <p>📍 <b>Localização em tempo real ativa</b></p>
-                <input id="mat-obs" placeholder="Observação de material extra...">
-                <button class="btn-blue" onclick="salvarMaterial()">REGISTRAR MATERIAL</button>
-            </div>
+        <div id="t1" class="page active">
+            <div id="status-gps" style="font-size: 10px; text-align: center; padding: 5px; background: #fff; margin-bottom: 5px; border-radius: 10px;">Monitoramento: Ativo 🛰️</div>
+            <div id="grid-maquinas" class="grid"></div>
         </div>
 
-        <!-- ABA 3: HOSPITAIS -->
-        <div id="tab3" class="page">
-            <h2>Hospitais</h2>
+        <div id="t2" class="page">
+            <h2>Materiais Extras</h2>
+            <input id="mat-obs" placeholder="O que você está levando?">
+            <button class="btn" onclick="salvarMat()">REGISTRAR NO RELATÓRIO</button>
+        </div>
+
+        <div id="t3" class="page">
+            <h2>Hospitais (PIN)</h2>
             <input id="h-nome" placeholder="Nome do Hospital">
-            <input id="h-pin" placeholder="Link do PIN/GPS (opcional)">
-            <button class="btn-blue" onclick="addHosp()">CADASTRAR HOSPITAL</button>
-            <div id="lista-hospitais" style="margin-top:20px;"></div>
+            <button class="btn" style="background:#000" onclick="capturarLocalizacao()">🎯 CAPTURAR LOCALIZAÇÃO ATUAL</button>
+            <p id="geo-info" style="font-size: 10px; color: gray;"></p>
+            <button class="btn" onclick="addHosp()">SALVAR HOSPITAL</button>
+            <div id="lista-hospitais"></div>
         </div>
 
-        <!-- ABA 4: FROTA (MÁQUINAS) -->
-        <div id="tab4" class="page">
-            <h2>Gestão da Frota</h2>
-            <p>Adicione as 18 máquinas aqui:</p>
-            <input id="m-id" type="number" placeholder="Número da Máquina">
-            <button class="btn-blue" onclick="addMaq()">ADICIONAR À FROTA</button>
-            <div id="lista-frota" style="margin-top:20px;"></div>
+        <div id="t4" class="page">
+            <h2>Frota</h2>
+            <input id="m-id" type="number" placeholder="Nº da Máquina">
+            <button class="btn" onclick="addMaq()">ADICIONAR MÁQUINA</button>
+            <div id="lista-frota"></div>
         </div>
 
-        <!-- ABA 5: RELATÓRIO COMPLETO -->
-        <div id="tab5" class="page">
-            <h2>Relatório Geral</h2>
-            <div id="lista-relatorio" style="background:white; border-radius:15px; padding:10px;"></div>
+        <div id="t5" class="page">
+            <h2>Relatório</h2>
+            <div id="lista-relatorio"></div>
         </div>
 
         <nav>
-            <button id="n1" onclick="setTab(1)" class="active">PAINEL</button>
-            <button id="n2" onclick="setTab(2)">GPS/MAT</button>
-            <button id="n3" onclick="setTab(3)">HOSP</button>
-            <button id="n4" onclick="setTab(4)">FROTA</button>
-            <button id="n5" onclick="setTab(5)">RELAT</button>
+            <button id="b1" onclick="setTab(1)" class="active">PAINEL</button>
+            <button id="b2" onclick="setTab(2)">MAT</button>
+            <button id="b3" onclick="setTab(3)">HOSP</button>
+            <button id="b4" onclick="setTab(4)">FROTA</button>
+            <button id="b5" onclick="setTab(5)">RELAT</button>
         </nav>
     </div>
 
-    <!-- MODAL DE EDIÇÃO -->
     <div id="modal" class="modal" style="display:none;">
         <div class="modal-content">
             <h3 id="modal-title">MÁQUINA</h3>
-            <div id="hosp-selector" style="display:flex; overflow-x:auto; gap:10px; margin-bottom:15px; padding:10px 0;"></div>
-            <button onclick="salvarStatus('verde','BASE')" class="btn-blue verde" style="color:white; margin-bottom:10px;">BASE (VERDE)</button>
-            <button onclick="salvarStatus('amarelo','RUA')" class="btn-blue amarelo" style="color:black; margin-bottom:10px;">RUA (AMARELO)</button>
-            <button onclick="salvarStatus('vermelho','RECOLHER')" class="btn-blue vermelho" style="color:white; margin-bottom:10px;">RECOLHER (VERMELHO)</button>
-            <button onclick="salvarStatus('azul','SAINDO')" class="btn-blue azul" style="color:white; margin-bottom:10px;">SAINDO (AZUL)</button>
-            <button onclick="salvarStatus('roxo','VOLTANDO')" class="btn-blue roxo" style="color:white; margin-bottom:10px;">VOLTANDO (ROXO)</button>
-            <button onclick="fecharModal()" style="margin-top:10px; border:none; background:none; color:#999; font-weight:bold; width:100%; padding:10px;">CANCELAR</button>
+            <div id="hosp-list" style="display:flex; overflow-x:auto; gap:10px; margin-bottom:15px; padding:10px 0;"></div>
+            <button onclick="salvar('verde')" class="btn verde">BASE (VERDE)</button>
+            <button onclick="salvar('amarelo')" class="btn amarelo" style="color:black">RUA (AMARELO)</button>
+            <button onclick="salvar('vermelho')" class="btn vermelho">RECOLHER (VERMELHO)</button>
+            <button onclick="salvar('azul')" class="btn azul">SAINDO (AZUL)</button>
+            <button onclick="salvar('roxo')" class="btn roxo">VOLTANDO (ROXO)</button>
+            <button onclick="fechar()" style="background:none; color:#999; width:100%; border:none;">CANCELAR</button>
         </div>
     </div>
 
@@ -106,89 +95,90 @@
         var config = { apiKey: "AIzaSyA896LR0DJv-TKqwt_DpkgO1MeaRKdKwP4", databaseURL: "https://sosrim-592ab-default-rtdb.firebaseio.com", projectId: "sosrim-592ab" };
         firebase.initializeApp(config);
         var db = firebase.database();
-        var user = localStorage.getItem('sos_user');
-        var selMaqId = null;
-        var hospitalSelecionado = "BASE";
-
-        if (!user) {
-            user = prompt("Quem é você? (Sergio, Aderildo ou Jairo)");
-            if (user) localStorage.setItem('sos_user', user);
-            else location.reload();
-        }
+        var user = localStorage.getItem('sos_user') || prompt("Seu Nome:");
+        localStorage.setItem('sos_user', user);
         document.getElementById('user-display').innerText = user;
 
-        function setTab(n) {
-            for(var i=1; i<=5; i++) {
-                document.getElementById('tab'+i).classList.remove('active');
-                document.getElementById('n'+i).classList.remove('active');
-            }
-            document.getElementById('tab'+n).classList.add('active');
-            document.getElementById('n'+n).classList.add('active');
-        }
+        var selId=null, selHosp="BASE", curLat=null, curLng=null;
+        var hospitaisData = {};
 
-        // --- FUNÇÕES DE DADOS ---
-        function addMaq() {
-            var id = document.getElementById('m-id').value;
-            if(id) { db.ref('machines/'+id).set({id:id, status:'verde', hospital:'BASE', time:'00:00'}); document.getElementById('m-id').value=''; }
-        }
-        function addHosp() {
-            var n = document.getElementById('h-nome').value;
-            var p = document.getElementById('h-pin').value;
-            if(n) { db.ref('hospitals').push({name:n, pin:p}); document.getElementById('h-nome').value=''; document.getElementById('h-pin').value=''; }
-        }
-        function abrirModal(id) {
-            selMaqId = id;
-            document.getElementById('modal-title').innerText = "MÁQUINA #" + id;
-            document.getElementById('modal').style.display = 'flex';
-        }
-        function fecharModal() { document.getElementById('modal').style.display = 'none'; }
+        function setTab(n){ for(var i=1; i<=5; i++){ document.getElementById('t'+i).classList.remove('active'); document.getElementById('b'+i).classList.remove('active'); } document.getElementById('t'+n).classList.add('active'); document.getElementById('b'+n).classList.add('active'); }
+        function abrir(id){ selId=id; document.getElementById('modal-title').innerText="MAQ #"+id; document.getElementById('modal').style.display='flex'; }
+        function fechar(){ document.getElementById('modal').style.display='none'; }
         
-        function salvarStatus(s, h) {
-            var time = new Date().toLocaleTimeString('pt-BR').slice(0,5);
-            db.ref('machines/'+selMaqId).update({status: s, hospital: hospitalSelecionado, time: time});
-            db.ref('history').push({
-                driver: user, 
-                timestamp: new Date().toLocaleString('pt-BR'),
-                details: "MÁQUINA #" + selMaqId + " alterada para " + s.toUpperCase() + " no hospital " + hospitalSelecionado
+        function capturarLocalizacao() {
+            navigator.geolocation.getCurrentPosition(function(pos) {
+                curLat = pos.coords.latitude; curLng = pos.coords.longitude;
+                document.getElementById('geo-info').innerText = "📍 Localização capturada: " + curLat.toFixed(4) + ", " + curLng.toFixed(4);
             });
-            hospitalSelecionado = "BASE";
-            fecharModal();
         }
 
-        // --- SINCRONIZAÇÃO EM TEMPO REAL ---
-        db.ref('machines').on('value', function(snap) {
-            var data = snap.val() || {};
-            var grid = document.getElementById('grid-maquinas');
-            var lista = document.getElementById('lista-frota');
-            grid.innerHTML = ''; lista.innerHTML = '';
-            var ids = Object.keys(data).sort((a,b) => a-b);
-            ids.forEach(function(id) {
-                var m = data[id];
-                grid.innerHTML += '<div class="card '+m.status+'" onclick="abrirModal(\''+id+'\')"><span style="font-size:10px;">#'+id+'</span><span class="hosp-name">'+(m.hospital||'BASE')+'</span><span class="time">'+m.time+'</span></div>';
-                lista.innerHTML += '<div style="background:white; padding:10px; margin-bottom:5px; border-radius:10px; display:flex; justify-content:space-between;"><b>Máquina #'+id+'</b><span onclick="db.ref(\'machines/'+id+'\').remove()" style="color:red;">Excluir</span></div>';
+        function addHosp(){ 
+            var n = document.getElementById('h-nome').value;
+            if(n){ db.ref('hospitals').push({name:n, lat:curLat, lng:curLng}); document.getElementById('h-nome').value=''; curLat=null; curLng=null; }
+        }
+
+        function addMaq(){ var id=document.getElementById('m-id').value; if(id){ db.ref('machines/'+id).set({id:id, status:'verde', hospital:'BASE', time:'00:00'}); document.getElementById('m-id').value=''; } }
+
+        function salvar(s){
+            var t = new Date().toLocaleTimeString('pt-BR').slice(0,5);
+            db.ref('machines/'+selId).update({status:s, hospital:selHosp, time:t});
+            db.ref('history').push({ driver:user, time:new Date().toLocaleString('pt-BR'), msg:"MAQ #"+selId+" -> "+selHosp+" ("+s.toUpperCase()+")" });
+            selHosp="BASE"; fechar();
+        }
+
+        function falar(texto) {
+            var msg = new SpeechSynthesisUtterance(texto);
+            msg.lang = 'pt-BR';
+            window.speechSynthesis.speak(msg);
+        }
+
+        // MONITORAMENTO AUTOMÁTICO (A cada 2 minutos)
+        setInterval(function() {
+            navigator.geolocation.getCurrentPosition(function(pos) {
+                var lat1 = pos.coords.latitude;
+                var lon1 = pos.coords.longitude;
+                
+                for(var id in hospitaisData) {
+                    var h = hospitaisData[id];
+                    if(h.lat && h.lng) {
+                        var dist = Math.sqrt(Math.pow(lat1 - h.lat, 2) + Math.pow(lon1 - h.lng, 2));
+                        if(dist < 0.001) { // Aproximadamente 100-200 metros
+                            falar("Sérgio, você chegou no " + h.name + ". Deseja atualizar alguma máquina?");
+                            setTab(1); // Volta para o painel
+                            break;
+                        }
+                    }
+                }
+            });
+        }, 120000); // 2 minutos
+
+        db.ref('machines').on('value', function(snap){
+            var data=snap.val()||{}; var grid=document.getElementById('grid-maquinas'); var lista=document.getElementById('lista-frota');
+            grid.innerHTML=''; lista.innerHTML='';
+            Object.keys(data).sort((a,b)=>a-b).forEach(function(id){
+                var m=data[id];
+                var pinLink = 'https://www.google.com/maps/search/?api=1&query=' + (m.hospital || 'Hospital');
+                grid.innerHTML += '<div class="card '+m.status+'" onclick="abrir(\''+id+'\')"><span>#'+id+'</span><a href="'+pinLink+'" class="btn-pin" onclick="event.stopPropagation()">📍</a><span style="font-size:8px">'+(m.hospital||'BASE')+'</span><span style="font-size:18px">'+m.time+'</span></div>';
+                lista.innerHTML += '<div style="background:#fff;padding:10px;margin-bottom:5px;border-radius:10px;display:flex;justify-content:space-between;"><b>MAQ #'+id+'</b><span onclick="db.ref(\'machines/'+id+'\').remove()" style="color:red">Excluir</span></div>';
             });
         });
 
-        db.ref('hospitals').on('value', function(snap) {
-            var data = snap.val() || {};
-            var lista = document.getElementById('lista-hospitais');
-            var seletor = document.getElementById('hosp-selector');
-            lista.innerHTML = ''; seletor.innerHTML = '<button onclick="hospitalSelecionado=\'BASE\'" style="padding:10px; border-radius:10px; border:1px solid #ccc;">BASE</button>';
-            for(var id in data) {
-                var h = data[id];
-                lista.innerHTML += '<div style="background:white; padding:10px; margin-bottom:5px; border-radius:10px; display:flex; justify-content:space-between;"><b>'+h.name+'</b><span onclick="db.ref(\'hospitals/'+id+'\').remove()" style="color:red;">Excluir</span></div>';
-                seletor.innerHTML += '<button onclick="hospitalSelecionado=\''+h.name+'\'; alert(\'Hospital selecionado: '+h.name+'\')" style="padding:10px; border-radius:10px; border:1px solid #ccc; white-space:nowrap;">'+h.name+'</button>';
+        db.ref('hospitals').on('value', function(snap){
+            hospitaisData = snap.val() || {};
+            var lista=document.getElementById('lista-hospitais'); var seletor=document.getElementById('hosp-list');
+            lista.innerHTML=''; seletor.innerHTML='<button onclick="selHosp=\'BASE\';alert(\'Base OK\')" style="padding:10px;border-radius:10px;border:1px solid #ccc">BASE</button>';
+            for(var id in hospitaisData){
+                var h=hospitaisData[id];
+                lista.innerHTML += '<div style="background:#fff;padding:10px;margin-bottom:5px;border-radius:10px;display:flex;justify-content:space-between;"><b>'+h.name+'</b><span onclick="db.ref(\'hospitals/'+id+'\').remove()" style="color:red">X</span></div>';
+                seletor.innerHTML += '<button onclick="selHosp=\''+h.name+'\';alert(\'Para: '+h.name+'\')" style="padding:10px;border-radius:10px;border:1px solid #ccc;white-space:nowrap">'+h.name+'</button>';
             }
         });
 
-        db.ref('history').limitToLast(50).on('value', function(snap) {
-            var data = snap.val() || {};
-            var lista = document.getElementById('lista-relatorio');
-            lista.innerHTML = '';
-            var items = Object.values(data).reverse();
-            items.forEach(function(h) {
-                lista.innerHTML += '<div style="border-bottom:1px solid #eee; padding:10px 0;"><small style="color:gray;">'+h.timestamp+' | '+h.driver+'</small><br><b>'+h.details+'</b></div>';
-            });
+        db.ref('history').limitToLast(20).on('value', function(snap){
+            var lista=document.getElementById('lista-relatorio'); lista.innerHTML='';
+            var items=Object.values(snap.val()||{}).reverse();
+            items.forEach(function(h){ lista.innerHTML += '<div style="border-bottom:1px solid #eee;padding:10px 0;font-size:11px;"><b>'+h.driver+'</b>: '+h.msg+'</div>'; });
         });
     </script>
 </body>
