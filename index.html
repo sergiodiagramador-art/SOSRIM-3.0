@@ -4,104 +4,105 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SOSRIM</title>
-    <!-- ESTE LINK ABAIXO É O QUE FUNCIONOU NA TELA DE BEM-VINDO -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/8.10.0/firebase.js"></script>
     <style>
-        :root { --blue: #2563eb; --green: #22c55e; --yellow: #facc15; --red: #ef4444; --purple: #a855f7; --bg: #f1f5f9; }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { margin: 0; font-family: Arial, sans-serif; background: var(--bg); color: #1e3a8a; }
-        header { background: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 10px; }
-        .card { aspect-ratio: 1/1; border-radius: 20px; padding: 10px; display: flex; flex-direction: column; justify-content: space-between; text-align: center; color: white; font-weight: bold; border: none; }
-        .card .time { font-size: 24px; font-weight: 900; }
-        .verde { background: var(--green); } .amarelo { background: var(--yellow); color: black; } 
-        .vermelho { background: var(--red); animation: pulse 1.5s infinite; } .azul { background: var(--blue); } .roxo { background: var(--purple); }
-        @keyframes pulse { 50% { opacity: 0.6; } }
-        nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 10px 0 30px 0; border-top: 1px solid #eee; }
-        nav button { border: none; background: none; color: #94a3b8; font-size: 10px; font-weight: bold; }
-        nav .active { color: var(--blue); }
-        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; align-items: flex-end; z-index: 100; }
-        .modal-content { background: white; width: 100%; border-radius: 30px 30px 0 0; padding: 25px; }
+        body { margin: 0; font-family: sans-serif; background: #f1f5f9; color: #1e3a8a; }
+        header { background: #fff; padding: 15px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; justify-content: space-between; }
+        .grid { display: block; padding: 10px; }
+        .card { width: 30%; aspect-ratio: 1/1; float: left; margin: 1.5%; border-radius: 15px; color: white; text-align: center; font-weight: bold; padding: 10px; box-sizing: border-box; }
+        .verde { background: #22c55e; } .amarelo { background: #facc15; color: black; } .vermelho { background: #ef4444; }
+        .azul { background: #2563eb; } .roxo { background: #a855f7; }
+        .time { font-size: 20px; display: block; margin-top: 5px; }
+        nav { position: fixed; bottom: 0; width: 100%; background: #fff; display: flex; padding: 15px 0; border-top: 1px solid #ddd; }
+        nav button { flex: 1; border: none; background: none; font-weight: bold; color: #64748b; font-size: 12px; }
+        #debug { position: fixed; top: 0; left: 0; background: black; color: lime; font-size: 10px; width: 100%; z-index: 1000; display: none; padding: 5px; }
     </style>
 </head>
 <body>
-    <div id="app"></div>
+    <div id="debug"></div>
+    <div id="app">
+        <div style="padding: 50px; text-align: center;">
+            <h1>SOSRIM</h1>
+            <p>Carregando sistema...</p>
+        </div>
+    </div>
 
     <script>
-        const config = {
+        // Função para mostrar erro na tela se tudo falhar
+        window.onerror = function(msg, url, line) {
+            var d = document.getElementById('debug');
+            d.style.display = 'block';
+            d.innerHTML = "ERRO: " + msg + " (Linha: " + line + ")";
+        };
+
+        var config = {
             apiKey: "AIzaSyA896LR0DJv-TKqwt_DpkgO1MeaRKdKwP4",
             databaseURL: "https://sosrim-592ab-default-rtdb.firebaseio.com",
             projectId: "sosrim-592ab"
         };
 
-        // INICIALIZAÇÃO SEGURA
+        var state = {
+            user: localStorage.getItem('sos_user'),
+            machines: {},
+            tab: 1
+        };
+
+        function render() {
+            var root = document.getElementById('app');
+            
+            // TELA DE LOGIN
+            if (!state.user) {
+                root.innerHTML = '<div style="padding:40px; text-align:center;">' +
+                    '<h1 style="color:#2563eb; font-size:40px;">SOSRIM</h1>' +
+                    '<p>Quem é você?</p>' +
+                    '<button onclick="login(\'Sergio\')" style="width:100%; padding:20px; margin-bottom:10px; border-radius:15px; border:none; background:#2563eb; color:white; font-weight:bold; font-size:20px;">SERGIO</button>' +
+                    '<button onclick="login(\'Aderildo\')" style="width:100%; padding:20px; margin-bottom:10px; border-radius:15px; border:none; background:#2563eb; color:white; font-weight:bold; font-size:20px;">ADERILDO</button>' +
+                    '<button onclick="login(\'Jairo\')" style="width:100%; padding:20px; margin-bottom:10px; border-radius:15px; border:none; background:#2563eb; color:white; font-weight:bold; font-size:20px;">JAIRO</button>' +
+                '</div>';
+                return;
+            }
+
+            // PAINEL PRINCIPAL
+            var html = '<header><span>SOSRIM 🚑</span><span onclick="logout()">' + state.user + ' 🚪</span></header>';
+            html += '<div class="grid">';
+            
+            // Loop manual das máquinas (mais compatível)
+            for (var id in state.machines) {
+                var m = state.machines[id];
+                html += '<div class="card ' + m.status + '" onclick="edit(\'' + id + '\')">' +
+                    '<span style="font-size:10px;">#' + m.id + '</span>' +
+                    '<span class="time">' + (m.time || '--:--') + '</span>' +
+                '</div>';
+            }
+            
+            html += '</div>';
+            html += '<nav><button onclick="setTab(1)">PAINEL</button><button onclick="setTab(5)">RELATÓRIO</button></nav>';
+            root.innerHTML = html;
+        }
+
+        // FUNÇÕES GLOBAIS
+        window.login = function(u) { state.user = u; localStorage.setItem('sos_user', u); render(); };
+        window.logout = function() { localStorage.clear(); location.reload(); };
+        window.setTab = function(t) { state.tab = t; render(); };
+        window.edit = function(id) {
+            var status = prompt("Novo Status (verde, amarelo, vermelho, azul, roxo):", state.machines[id].status);
+            if (status) {
+                var t = new Date().toLocaleTimeString('pt-BR').slice(0,5);
+                firebase.database().ref('machines/' + id).update({ status: status, time: t });
+            }
+        };
+
+        // INICIAR FIREBASE
         if (typeof firebase !== 'undefined') {
             firebase.initializeApp(config);
-            const db = firebase.database();
-            
-            let state = {
-                user: localStorage.getItem('sosrim_user'),
-                machines: {}, hospitals: {}, history: [],
-                tab: 1, editingId: null
-            };
-
-            function render() {
-                const root = document.getElementById('app');
-                if (!state.user) {
-                    root.innerHTML = `<div style="padding:40px; text-align:center;"><h1 style="font-size:40px; font-weight:900; color:var(--blue);">SOSRIM</h1><p>Selecione seu nome:</p>\({['Sergio', 'Aderildo', 'Jairo'].map(n => `<button onclick="doLogin('\){n}')" style="width:100%; padding:20px; background:var(--blue); color:white; border:none; border-radius:20px; font-weight:900; font-size:18px; margin-bottom:10px;">${n}</button>`).join('')}</div>`;
-                    return;
-                }
-
-                root.innerHTML = `
-                    <header><b>SOSRIM 🚑</b><span onclick="doLogout()">${state.user} 🚪</span></header>
-                    <main style="padding-bottom: 100px;">${renderTab()}</main>
-                    <nav>
-                        <button onclick="setTab(1)" class="${state.tab===1?'active':''}">PAINEL</button>
-                        <button onclick="setTab(3)" class="${state.tab===3?'active':''}">HOSP</button>
-                        <button onclick="setTab(4)" class="${state.tab===4?'active':''}">FROTA</button>
-                        <button onclick="setTab(5)" class="${state.tab===5?'active':''}">RELAT</button>
-                    </nav>
-                    ${state.editingId ? renderModal() : ''}
-                `;
-            }
-
-            function renderTab() {
-                if (state.tab === 1) {
-                    const maqs = Object.values(state.machines).sort((a,b)=>a.id-b.id);
-                    return `<div class="grid">\({maqs.map(m => `<div class="card \){m.status}" onclick="openEdit('\({m.id}')"><div>#\){m.id}</div><div><div style="font-size:9px;">\({m.hospital || 'BASE'}</div><div class="time">\){m.time || '--:--'}</div></div></div>`).join('')}</div>`;
-                }
-                if (state.tab === 5) return `<div style="padding:20px;"><h2>Relatório</h2>\({state.history.slice().reverse().map(h => `<div style="border-bottom:1px solid #eee; padding:10px 0;"><small>\){h.driver} | \({h.timestamp}</small><br><b>\){h.details}</b></div>`).join('')}</div>`;
-                return `<div style="padding:20px;">Use o botão azul para cadastrar máquinas/hospitais.</div>`;
-            }
-
-            function renderModal() {
-                const m = state.machines[state.editingId];
-                return `<div class="modal"><div class="modal-content">
-                    <h3>MAQ #${m.id}</h3>
-                    <button onclick="saveM('verde','BASE')" style="width:100%; padding:15px; background:var(--green); color:white; border:none; border-radius:15px; margin-bottom:10px; font-weight:bold;">BASE (VERDE)</button>
-                    <button onclick="saveM('amarelo','RUA')" style="width:100%; padding:15px; background:var(--yellow); border:none; border-radius:15px; margin-bottom:10px; font-weight:bold;">RUA (AMARELO)</button>
-                    <button onclick="saveM('vermelho','RECOLHER')" style="width:100%; padding:15px; background:var(--red); color:white; border:none; border-radius:15px; margin-bottom:10px; font-weight:bold;">RECOLHER (VERMELHO)</button>
-                    <button onclick="closeEdit()" style="width:100%; padding:10px; background:none; border:none; color:#999;">CANCELAR</button>
-                </div></div>`;
-            }
-
-            window.doLogin = (u) => { state.user = u; localStorage.setItem('sosrim_user', u); render(); };
-            window.doLogout = () => { localStorage.clear(); location.reload(); };
-            window.setTab = (t) => { state.tab = t; render(); };
-            window.openEdit = (id) => { state.editingId = id; render(); };
-            window.closeEdit = () => { state.editingId = null; render(); };
-            window.saveM = (s, h) => {
-                const time = new Date().toLocaleTimeString('pt-BR').slice(0,5);
-                db.ref('machines/'+state.editingId).update({ status: s, hospital: h, time: time });
-                db.ref('history').push({ driver: state.user, timestamp: time, details: `MAQ#\({state.editingId} -> \){h}` });
-                state.editingId = null;
-            };
-
-            db.ref('machines').on('value', s => { state.machines = s.val() || {}; render(); });
-            db.ref('history').on('value', s => { state.history = Object.values(s.val() || {}); render(); });
+            firebase.database().ref('machines').on('value', function(snap) {
+                state.machines = snap.val() || {};
+                render();
+            });
         } else {
-            document.body.innerHTML = "Erro ao carregar banco de dados. Verifique sua rede.";
+            document.getElementById('app').innerHTML = "<h1>Erro de Internet</h1><p>O Google está bloqueado.</p>";
         }
+
     </script>
 </body>
 </html>
